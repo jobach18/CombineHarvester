@@ -9,12 +9,33 @@ import numpy as np
 import pandas as pd
 
 
+def extract_info_from_foldername(folder_name):
+     '''
+     function to extract the info in the folder name:
+     A_mX1_wX1__H_mX2_wX2
+     returns:
+        m1      float
+        m2      float 
+        w1      float 
+        w2      float
+     '''
+    # Use regular expressions to extract the values
+    pattern = r"A_(m\d+)_w(\d+p\d+)__H_(m\d+)_w(\d+p\d+)"
+    matches = re.findall(pattern, folder_name)
+    # Extracted values
+    m1_value = float(matches[0][0][1:])  # m1000
+    w1_value = matches[0][1]  # w5p0
+    w1_value = float(re.findall(r'\d+', w1_value)[0]+'.'+re.findall(r'\d+', w1_value)[1])
+    m2_value = float(matches[0][2][1:])
+    w2_value = matches[0][3]
+    w2_value = float(re.findall(r'\d+', w2_value)[0]+'.'+re.findall(r'\d+', w2_value)[1])
+    return m1_value, m2_value, w1_value, w2_value 
+
 
 def main():
     # Root folder where the search begins
     root_folder = "../data1/"
     df = pd.DataFrame(columns=['m1', 'm2', 'w1', 'w2', 'limit1', 'limit2'])
-
     # Find all folders starting with "A" in the root folder
     matching_folders = [folder for folder in os.listdir(root_folder) if folder.startswith("A")]
 
@@ -36,17 +57,9 @@ def main():
             #with uproot.open(root_file_path) as file:
                 #tree = file["limit"]
             dataframe = pd.concat(uproot.iterate(root_file_path, "limit", library='pd'))
-            # Use regular expressions to extract the values
-            pattern = r"A_(m\d+)_w(\d+p\d+)__H_(m\d+)_w(\d+p\d+)"
-            matches = re.findall(pattern, folder)
-            print(matches)
-            # Extracted values
-            m1_value = matches[0][0]  # m1000
-            w1_value = matches[0][1]  # w5p0
-            m2_value = matches[0][2]
-            w2_value = matches[0][3]
             print(f"Dataframe from {root_file_path}")
             print(dataframe["limit"][0])
+            m1_value, m2_value, w1_value, w2_value = extract_info_from_foldername(folder)
             new_row = { "m1" : m1_value,
                         "m2" : m2_value,
                         "w1" : w1_value,
