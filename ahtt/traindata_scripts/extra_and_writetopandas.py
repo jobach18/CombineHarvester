@@ -4,13 +4,15 @@ snippet that extracts the limits from the files and writes them to a pandas data
 
 import os
 import re
+import argparse
 import uproot
 import numpy as np
 import pandas as pd
+from tqdm import tqdm
 
 
 def extract_info_from_foldername(folder_name):
-     '''
+    '''
      function to extract the info in the folder name:
      A_mX1_wX1__H_mX2_wX2
      returns:
@@ -18,7 +20,7 @@ def extract_info_from_foldername(folder_name):
         m2      float 
         w1      float 
         w2      float
-     '''
+    '''
     # Use regular expressions to extract the values
     pattern = r"A_(m\d+)_w(\d+p\d+)__H_(m\d+)_w(\d+p\d+)"
     matches = re.findall(pattern, folder_name)
@@ -33,23 +35,27 @@ def extract_info_from_foldername(folder_name):
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-exp", "--Expectation", help= "expectation that the limit was calculated with, can be either exp-s, exp-b, exp-10 or exp-01", default='exp-s')
+    args = parser.parse_args()
     # Root folder where the search begins
     root_folder = "../data1/"
     df = pd.DataFrame(columns=['m1', 'm2', 'w1', 'w2', 'limit1', 'limit2'])
+    i = 0 
     # Find all folders starting with "A" in the root folder
     matching_folders = [folder for folder in os.listdir(root_folder) if folder.startswith("A")]
 
     # Iterate over the matching folders
-    for folder in matching_folders:
+    for folder in tqdm(matching_folders):
         subfolder_path = os.path.join(root_folder, folder)
 	# Build the path to the subfolder starting with "fc-results"
         fc_results_folder = next((subfolder for subfolder in os.listdir(subfolder_path) if subfolder.startswith("fc-result")), None)
-        print(fc_results_folder)
         final_folder = os.path.join(subfolder_path, fc_results_folder)
-        # Check if the subfolder exists
+        # Check if the subfolder exist)s
         if os.path.exists(final_folder) and os.path.isdir(final_folder):
                 # Find the .root file in the subfolder
-                root_file = next((file for file in os.listdir(final_folder) if file.endswith(".root")), None)
+                expectation = args.Expectation 
+                root_file = next((file for file in os.listdir(final_folder) if file.endswith(expectation+".root")), None)
         # Check if a .root file was found
         if root_file is not None:
             # Open the .root file and read data from the "limits" branch into a pandas dataframe
@@ -57,8 +63,6 @@ def main():
             #with uproot.open(root_file_path) as file:
                 #tree = file["limit"]
             dataframe = pd.concat(uproot.iterate(root_file_path, "limit", library='pd'))
-            print(f"Dataframe from {root_file_path}")
-            print(dataframe["limit"][0])
             m1_value, m2_value, w1_value, w2_value = extract_info_from_foldername(folder)
             new_row = { "m1" : m1_value,
                         "m2" : m2_value,
@@ -66,10 +70,8 @@ def main():
                         "w2" : w2_value,
                         "limit1" : dataframe["limit"][0],
                         "limit2" : dataframe["limit"][1],}
-            df.append(new_row, ignore_index=True)
-            print(new_row)
-            print(df)
-            exit()   
-
+            df.loc[i] = new_row
+            i = i +1
+    df.to_hdf('train_data_'+expectation+'.h5', key='df', mode='w')
 if __name__=="__main__":
     main()
