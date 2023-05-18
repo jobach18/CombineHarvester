@@ -48,7 +48,7 @@ def main():
     # Iterate over the matching folders
     for folder in tqdm(matching_folders):
         subfolder_path = os.path.join(root_folder, folder)
-	# Build the path to the subfolder starting with "fc-results"
+        # Build the path to the subfolder starting with "fc-results"
         fc_results_folder = next((subfolder for subfolder in os.listdir(subfolder_path) if subfolder.startswith("fc-result")), None)
         final_folder = os.path.join(subfolder_path, fc_results_folder)
         # Check if the subfolder exist)s
