@@ -39,7 +39,7 @@ def main():
     parser.add_argument("-exp", "--Expectation", help= "expectation that the limit was calculated with, can be either exp-s, exp-b, exp-10 or exp-01", default='exp-s')
     args = parser.parse_args()
     # Root folder where the search begins
-    root_folder = "../data1/"
+    root_folder = "../run2/"
     df = pd.DataFrame(columns=['m1', 'm2', 'w1', 'w2', 'limit1', 'limit2'])
     i = 0 
     # Find all folders starting with "A" in the root folder
