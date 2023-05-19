@@ -5,15 +5,15 @@ pairs="${masses};${widths};${masses};${widths}"
 N_JOB=10
 TAG="try"
 
-mkdir ./../${TAG}
-mkdir ./../${TAG}/condor
-mkdir ./../${TAG}/condor/errors
-mkdir ./../${TAG}/condor/outputs
-mkdir ./../${TAG}/condor/logs
-cp template/condor.sub ./../${TAG}/
-sed -i -e "s|SUBMITDIR|${TAG}|g"  ./../condor.sub
-cp template/datacard_combine_local.sh ./../${TAG}/
-cd ./../${TAG}/ 
+mkdir ./../data/${TAG}
+mkdir ./../data/${TAG}/condor
+mkdir ./../data/${TAG}/condor/errors
+mkdir ./../data/${TAG}/condor/outputs
+mkdir ./../data/${TAG}/condor/logs
+cp template/condor.sub ./../data/${TAG}/
+sed -i -e "s|DIRE|${TAG}|g"  ./../data/${TAG}/condor.sub
+cp template/datacard_combine_local.sh ./../data/${TAG}/
+cd ../data/${TAG}/ 
 
 #prepare the pairs array into an array with all permutations
 # Split the pairs by semicolons
@@ -68,6 +68,7 @@ for ((i = 0; i < N_JOB; i++)); do
 	    subarray+=";$entry"
     done
     subarray+=("${subarray:1}")
+    pwd
     condor_submit PAIRS=subarray TAG=${TAG} condor.sub 
     start=$end
 done

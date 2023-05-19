@@ -1,6 +1,6 @@
 # HTCondor submit file to submit all jobs
 
-SUBMIT_DIR = /nfs/dust/cms/user/bachjoer/ml-workspace/learn_likelihood/CMSSW_10_2_13/src/CombineHarvester/ahtt/SUBMITDIR/ 
+SUBMIT_DIR = /nfs/dust/cms/user/bachjoer/ml-workspace/learn_likelihood/CMSSW_10_2_13/src/CombineHarvester/ahtt/data/DIRE 
 executable              = $(SUBMIT_DIR)/datacard_combine_local.sh
 arguments               = $(PAIRS) $(TAG)
 log                     = $(SUBMIT_DIR)/condor/logs/log.o$(Cluster).$(Process)
@@ -12,5 +12,5 @@ when_to_transfer_output = ON_EXIT_OR_EVICT
 request_memory          = 2G
 notification            = Never
 max_retries             = 3
-request_runtime         = 2000
+request_runtime         = 200
 queue 1
