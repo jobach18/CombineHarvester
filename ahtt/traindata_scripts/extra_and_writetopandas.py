@@ -60,16 +60,17 @@ def main():
         if root_file is not None:
             # Open the .root file and read data from the "limits" branch into a pandas dataframe
             root_file_path = os.path.join(final_folder, root_file)
-            #with uproot.open(root_file_path) as file:
-                #tree = file["limit"]
-            dataframe = pd.concat(uproot.iterate(root_file_path, "limit", library='pd'))
+            with uproot.open(root_file_path) as file:
+                tree = file["limit"]
+                dataframe = tree["nll"].array(library="pd")
+            #dataframe = pd.concat(uproot.iterate(root_file_path, "limit", library='pd'))
             m1_value, m2_value, w1_value, w2_value = extract_info_from_foldername(folder)
             new_row = { "m1" : m1_value,
                         "m2" : m2_value,
                         "w1" : w1_value,
                         "w2" : w2_value,
-                        "limit1" : dataframe["limit"][0],
-                        "limit2" : dataframe["limit"][1],}
+                        "limit1" : dataframe[0],
+                        "limit2" : dataframe[1],}
             df.loc[i] = new_row
             i = i +1
     df.to_hdf('train_data_'+expectation+'.h5', key='df', mode='w')
