@@ -54,13 +54,16 @@ class Trainer():
           self.model = model
           self.dataset = dataset
           self.loss = lossfunction
-    
+          self.trainset, self.testset = torch.utils.data.random_split(dataset, 
+                                        [int(len(dataset)*0.8), int(len(dataset)*0.2)])
+
+
     def train(n_epoch, lr):
         '''
         trains the model
         '''
         optim = torch.optim.Adam(self.model.parameters(), lr=lr)
-        trainload = torch.util.DataLoader(self.dataset, batch_size=128, shuffle= True)
+        trainload = torch.util.DataLoader(self.trainset, batch_size=128, shuffle= True)
         print(f' model is on GPU: {next(mlp.parameters()).is_cuda}')
         for epoch in range(0, n_epoch):
             print(f'Starting epoch {epoch+1}')
@@ -86,4 +89,13 @@ class Trainer():
                 i = i+1
             print(f'loss is {loss.mean()} after epoch {epoch}')
         print(f' training finished with a loss of: {current_loss}')
-                                                               
+
+    def validation_pass():
+        '''
+	validation pass with the test set, returns validation input, target and network output as arrays 
+	'''
+	val_loader = torch.util.DataLoader(self.testset, batch_size=128, shuffle=False)
+	for data in iter(val_loader):
+		inputs, target = data
+		outputs = self.model(inputs.float())
+	return inputs, target, outputs
