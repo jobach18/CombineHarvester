@@ -21,5 +21,4 @@ __init__.py
 *.png
 
 docs/html
-ahtt/data1
-ahtt/run2
+ahtt/data/
