@@ -42,7 +42,7 @@ def generate_g_grid(pair, ggrids = "", gmode = "", propersig = False, ndivision 
 
         for ggrid in ggrids:
             if not os.path.isfile(ggrid):
-                print "g grid file " + ggrid + " is not accessible, skipping..."
+                print( "g grid file " + ggrid + " is not accessible, skipping...")
                 return g_grid
 
             with open(ggrid) as ff:
