@@ -37,16 +37,30 @@ def extract_info_from_foldername(folder_name):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-exp", "--Expectation", help= "expectation that the limit was calculated with, can be either exp-s, exp-b, exp-10 or exp-01", default='exp-s')
+    parser.add_argument("-tag", "--Tag", help= "tag that the limits were calculated with before, gives the directory the roots are in.")
+    parser.add_argument("-id", "--JobId", help= "Id of this job")
+    parser.add_argument("-js", "--JobSize", help= "size of the job in #jobs")
     args = parser.parse_args()
     # Root folder where the search begins
-    root_folder = "../run2/"
+    root_folder = "../data/"+args.Tag+"/"
     df = pd.DataFrame(columns=['m1', 'm2', 'w1', 'w2', 'limit1', 'limit2'])
     i = 0 
     # Find all folders starting with "A" in the root folder
     matching_folders = [folder for folder in os.listdir(root_folder) if folder.startswith("A")]
 
+    #calculate the folders for this job
+    if int(args.JobSize) != 1:
+        fold_per_job = int(len(matching_folders)/args.JobSize)
+	if args.JobId < args.JobSize-1:
+            fold_of_job = matching_folders[args.JobId*fold_per_job:(args.JobId+1)*fold_per_job]
+        else:
+            fold_of_job = matching_folders[args.JobId*fold_per_job:]
+    else:
+        fold_of_job = matching_folders
+
+
     # Iterate over the matching folders
-    for folder in tqdm(matching_folders):
+    for folder in tqdm(fold_of_job):
         subfolder_path = os.path.join(root_folder, folder)
         # Build the path to the subfolder starting with "fc-results"
         fc_results_folder = next((subfolder for subfolder in os.listdir(subfolder_path) if subfolder.startswith("fc-result")), None)
@@ -73,6 +87,6 @@ def main():
                         "limit2" : dataframe[1],}
             df.loc[i] = new_row
             i = i +1
-    df.to_hdf('train_data_'+expectation+'.h5', key='df', mode='w')
+    df.to_hdf('train_data_'+expectation+"_"+args.JobId+'.h5', key='df', mode='w')
 if __name__=="__main__":
     main()
