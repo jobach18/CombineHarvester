@@ -11,8 +11,9 @@ mkdir ./../data/${TAG}/condor/errors
 mkdir ./../data/${TAG}/condor/outputs
 mkdir ./../data/${TAG}/condor/logs
 cp template/condor.sub ./../data/${TAG}/
-sed -i -e "s|DIRE|${TAG}|g"  ./../data/${TAG}/condor.sub
 cp template/datacard_combine_local.sh ./../data/${TAG}/
+sed -i -e "s|DIRE|${TAG}|g"  ./../data/${TAG}/condor.sub
+sed -i -e "s|TAGGED|${TAG}|g"  ./../data/${TAG}/datacard_combine_local.sh
 cd ../data/${TAG}/ 
 
 #prepare the pairs array into an array with all permutations
@@ -56,6 +57,10 @@ remainder=$(( array_length % N_JOB ))
 subarrays=()
 start=0
 for ((i = 0; i < N_JOB; i++)); do
+    mkdir subfold_${i}
+    cp condor.sub subfold_${i}/
+    cp datacard_combine_local.sh subfold_${i}/
+    cd subfold_${i}
     subarray=()
     end=$(( start + subarray_size ))
     if [ $i -lt $remainder ]; then
@@ -69,6 +74,12 @@ for ((i = 0; i < N_JOB; i++)); do
     done
     subarray+=("${subarray:1}")
     pwd
-    condor_submit PAIRS=subarray TAG=${TAG} condor.sub 
+    echo ${subarray}
+    echo ${TAG}
+    sed -i -e "s|PAIRS|${subarray}|g"  datacard_combine_local.sh
+    sed -i -e "s|SUBFOLD|subfold_${i}|g"  condor.sub
+    #condor_submit PAIRS=${subarray} TAGS=${TAG} condor.sub 
+    condor_submit  condor.sub 
+    cd ..
     start=$end
 done
