@@ -48,3 +48,19 @@ Jobs TAG Expectation
 
 to run the extraction into h5 files with 100 jobs in parallel, for the data generated in the data/tag1/ folder for the combine results with the expected signal (combine info exp-s). 
 The python script ahtt/traindata_scripts/concat_h5.py is run with the inputs -tag -exp and concatenates the resulting h5 files from step 2 into one larg "full.h5" file. 
+
+### The ML Module
+The path ahtt/ml/ contains the code to built and test ML models to learn the negative log likelihood. 
+The network.py file contains the classes 
+	1. Model:
+		contains the instructions for a pytorch DNN, so far only simple fully connected architectures are implemented. This might change in the future. 
+		A model is initialized by passing the size of the input vector and the number of hidden nodes. 
+		Currently, one hidden layer with n_hidden nodes gets initialized. This is hard-coded, so changes in the architecture need to be done in the construct of this class.
+		A rectified linear Unit is used for activation and a single output node gives the regression output 
+	2. Dataset:
+		A pytorch dataset, initialized by passing the x and y values as torch tensors or np arrays. 
+	3. Trainer
+		This class does the magic, holds an instance of Model and Dataset and fulfills the task of training.
+		Currently is initialized by passing an instance of a Dataset a Model and a loss function defined by a python function with y_target and y_dnnoutput as arguments. 
+		Trainer.train(n_epochs, lr) is the function which actually trains the torch model, with the specified number of epochs and learning rate lr.  
+
