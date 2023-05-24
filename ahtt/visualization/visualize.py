@@ -20,7 +20,7 @@ def main():
             df = store['df']
     fig, ax1 = plt.subplots(1, 1)
     sns.histplot(df, x="limit1", ax=ax1)
-    fig.savefig('limit1.pdf', dpi=200)
+    fig.savefig('limit1_'+args.Tag+'_'+args.Expectation+'.pdf', dpi=200)
 
 
 
