@@ -9,7 +9,7 @@ source /nfs/dust/cms/user/afiqaize/cms/sft/condor/condorUtil.sh
 source /afs/desy.de/user/b/bachjoer/.bashrc 
 #conda activate train
 #cmsenv
-cd /nfs/dust/cms/user/bachjoer/ml-workspace/learn_likelihood/CMSSW_10_2_13/src/CombineHarvester/ahtt/data/${tag[@]}/
+cd /nfs/dust/cms/user/bachjoer/ml-workspace/learn_likelihood/CMSSW_10_2_13/src/CombineHarvester/ahtt/data/${tag[@]}/SUBFOLD/
 cmsenv
 pwd 
 channels='ee,em,mm,e3j,e4pj,m3j,m4pj'
@@ -22,6 +22,6 @@ drops='Type3,FlavorQCD_201,TT_norm'
 
 
 #python3 /nfs/dust/cms/user/bachjoer/ml-workspace/learn_likelihood/CMSSW_10_2_13/src/CombineHarvester/ahtt/scripts/submit_twin.py --mode 'datacard,validate' --point "${pairs}" --sushi-kfactor --lnN-under-threshold --year "${years}" --channel "${channels}" --tag "${tag}" --keep "${keeps}" --drop "${drops}" --local 
- ../../scripts/submit_twin.py --mode 'datacard,validate' --point "${pairs}" --sushi-kfactor --lnN-under-threshold --year "${years}" --channel "${channels}" --tag "${tag}" --keep "${keeps}" --drop "${drops}" --local 
+ ../../../scripts/submit_twin.py --mode 'datacard,validate' --point "${pairs}" --sushi-kfactor --lnN-under-threshold --year "${years}" --channel "${channels}" --tag "${tag}" --keep "${keeps}" --drop "${drops}" --local 
 #python3 /nfs/dust/cms/user/bachjoer/ml-workspace/learn_likelihood/CMSSW_10_2_13/src/CombineHarvester/ahtt/scripts/submit_twin.py --mode contour --point "${pairs}" --tag "${tag}" --g-values '1.0,1.0' --fc-expect "${exps}" --n-toy 0 --fc-single-point --extra-option='--saveNLL --X-rtd REMOVE_CONSTANT_ZERO_POINT=1 --saveSpecifiedNuis=all' --local 
- ../../scripts/submit_twin.py --mode contour --point "${pairs}" --tag "${tag}" --g-values '1.0,1.0' --fc-expect "${exps}" --n-toy 0 --fc-single-point --extra-option='--saveNLL --X-rtd REMOVE_CONSTANT_ZERO_POINT=1 --saveSpecifiedNuis=all' --local 
+ ../../../scripts/submit_twin.py --mode contour --point "${pairs}" --tag "${tag}" --g-values '1.0,1.0' --fc-expect "${exps}" --n-toy 0 --fc-single-point --extra-option='--saveNLL --X-rtd REMOVE_CONSTANT_ZERO_POINT=1 --saveSpecifiedNuis=all' --local 
