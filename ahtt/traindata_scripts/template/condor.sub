@@ -12,5 +12,5 @@ when_to_transfer_output = ON_EXIT_OR_EVICT
 request_memory          = 2G
 notification            = Never
 max_retries             = 3
-request_runtime         = 10000
+request_runtime         = 20000
 queue 1

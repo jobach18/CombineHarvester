@@ -1,9 +1,9 @@
 #!/bin/bash
-masses='m400,m500,m650,m800,m1000'
+masses='m400,m500,m600,m700,m800,m900,m1000'
 widths='w1p0,w2p5,w5p0,w10p0,w25p0'
 pairs="${masses};${widths};${masses};${widths}"
-N_JOB=10
-TAG="try"
+N_JOB=50
+TAG="hundreds"
 
 mkdir ./../data/${TAG}
 mkdir ./../data/${TAG}/condor
@@ -78,6 +78,7 @@ for ((i = 0; i < N_JOB; i++)); do
     echo ${TAG}
     sed -i -e "s|PAIRS|${subarray}|g"  datacard_combine_local.sh
     sed -i -e "s|SUBFOLD|subfold_${i}|g"  condor.sub
+    sed -i -e "s|SUBFOLD|subfold_${i}|g"  datacard_combine_local.sh
     #condor_submit PAIRS=${subarray} TAGS=${TAG} condor.sub 
     condor_submit  condor.sub 
     cd ..

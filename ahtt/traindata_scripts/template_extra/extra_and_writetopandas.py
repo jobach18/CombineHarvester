@@ -41,23 +41,33 @@ def main():
     parser.add_argument("-id", "--JobId", help= "Id of this job")
     parser.add_argument("-js", "--JobSize", help= "size of the job in #jobs")
     args = parser.parse_args()
+    expectation = args.Expectation 
     # Root folder where the search begins
-    root_folder = "../data/"+args.Tag+"/"
+    root_folder = "./"
     df = pd.DataFrame(columns=['m1', 'm2', 'w1', 'w2', 'limit1', 'limit2'])
-    i = 0 
+    i = 0
+    matching_folders = []
     # Find all folders starting with "A" in the root folder
-    matching_folders = [folder for folder in os.listdir(root_folder) if folder.startswith("A")]
+    for subfolder in os.listdir(root_folder):
+        pattern = r"subfold_\d+"
+        subfolder_path = os.path.join(root_folder, subfolder)
+        # Check if the subfolder is a directory
+        if os.path.isdir(subfolder_path) and re.match(pattern, subfolder):
+            matching_folders.extend([os.path.join(subfolder_path, folder) for folder in os.listdir(subfolder_path) if folder.startswith("A")][:])
+
+    print(matching_folders)
 
     #calculate the folders for this job
     if int(args.JobSize) != 1:
-        fold_per_job = int(len(matching_folders)/args.JobSize)
-	if args.JobId < args.JobSize-1:
-            fold_of_job = matching_folders[args.JobId*fold_per_job:(args.JobId+1)*fold_per_job]
+        fold_per_job = int(len(matching_folders)/int(args.JobSize))
+        if int(args.JobId) < int(args.JobSize)-1:
+            fold_of_job = matching_folders[int(args.JobId)*fold_per_job:(int(args.JobId)+1)*fold_per_job]
         else:
-            fold_of_job = matching_folders[args.JobId*fold_per_job:]
+            fold_of_job = matching_folders[int(args.JobId)*fold_per_job:]
     else:
         fold_of_job = matching_folders
 
+    print(f'there are {len(fold_of_job)} files in this job')
 
     # Iterate over the matching folders
     for folder in tqdm(fold_of_job):
