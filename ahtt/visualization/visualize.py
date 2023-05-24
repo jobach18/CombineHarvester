@@ -18,8 +18,9 @@ def main():
     with pd.HDFStore(file_path, mode='r') as store:
         if 'df' in store:
             df = store['df']
-    fig, ax1 = plt.subplots(1, 1)
+    fig, [ax1, ax2] = plt.subplots(1, 2)
     sns.histplot(df, x="limit1", ax=ax1)
+    sns.histplot(df, x="limit2", ax=ax2)
     fig.savefig('limit1_'+args.Tag+'_'+args.Expectation+'.pdf', dpi=200)
 
 
