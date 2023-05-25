@@ -18,13 +18,15 @@ def main():
     with pd.HDFStore(file_path, mode='r') as store:
         if 'df' in store:
             df = store['df']
-    fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2)
+    fig, ((ax1, ax2), (ax3, ax4), (ax5, ax6)) = plt.subplots(3, 2)
     sns.histplot(df, x="limit1", ax=ax1)
-    sns.histplot(df, x="limit1", ax=ax1)
+    sns.histplot(df, x="limit2", ax=ax2)
     sns.histplot(df, x="m1", ax=ax3)
     sns.histplot(df, x="m2", ax=ax4)
+    sns.histplot(df, x="limit2", hue="m1", ax=ax5)
+    sns.histplot(df, x="limit2", hue="m2", ax=ax6)
     plt.tight_layout()
-    fig.savefig('limit1_'+args.Tag+'_'+args.Expectation+'.pdf', dpi=200)
+    fig.savefig('limits_'+args.Tag+'_'+args.Expectation+'.pdf', dpi=200)
 
 
 
