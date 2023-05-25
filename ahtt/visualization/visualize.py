@@ -22,7 +22,7 @@ def overviewplot(df, args):
 
 
 def limit_asfun(df, x_tag, hue_tags, args):
-    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(20, 20))
+    fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(30, 10))
     sns.lineplot(df, x=x_tag, y="limit2", hue=hue_tags[0], ax=ax1, estimator=None)
     sns.lineplot(df, x=x_tag, y="limit2", hue=hue_tags[1], ax=ax2, estimator=None)
     sns.lineplot(df, x=x_tag, y="limit2", hue=hue_tags[2], ax=ax3, estimator=None)
