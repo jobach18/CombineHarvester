@@ -23,11 +23,11 @@ def overviewplot(df, args):
 
 def limit_asfun(df, x_tag, hue_tags, args):
     fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(12, 24))
-    sns.lineplot(df, x=x_tag, y="limit2", hue=hue_tags[0], ax=ax1, estimator=None)
-    sns.lineplot(df, x=x_tag, y="limit2", hue=hue_tags[1], ax=ax2, estimator=None)
-    sns.lineplot(df, x=x_tag, y="limit2", hue=hue_tags[2], ax=ax3, estimator=None)
+    sns.lineplot(df, x=x_tag, y="limit2", hue=hue_tags[0], ax=ax1)
+    sns.lineplot(df, x=x_tag, y="limit2", hue=hue_tags[1], ax=ax2)
+    sns.lineplot(df, x=x_tag, y="limit2", hue=hue_tags[2], ax=ax3)
     plt.tight_layout()
-    fig.savefig('limitsasfun_'+x_tag+"_"+args.Tag+'_'+args.Expectation+'.pdf', dpi=200)
+    fig.savefig('limitsasfun_averageovermissingparserrorband_'+x_tag+"_"+args.Tag+'_'+args.Expectation+'.pdf', dpi=200)
 
 def main():
     parser = argparse.ArgumentParser()
