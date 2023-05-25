@@ -58,7 +58,7 @@ class Trainer():
                                         [int(len(dataset)*0.8), int(len(dataset)*0.2)])
 
 
-    def train(n_epoch, lr):
+     def train(n_epoch, lr):
         '''
         trains the model
         '''
@@ -90,12 +90,12 @@ class Trainer():
             print(f'loss is {loss.mean()} after epoch {epoch}')
         print(f' training finished with a loss of: {current_loss}')
 
-    def validation_pass():
+     def validation_pass():
         '''
 	validation pass with the test set, returns validation input, target and network output as arrays 
 	'''
-	val_loader = torch.util.DataLoader(self.testset, batch_size=128, shuffle=False)
-	for data in iter(val_loader):
-		inputs, target = data
-		outputs = self.model(inputs.float())
-	return inputs, target, outputs
+        val_loader = torch.util.DataLoader(self.testset, batch_size=128, shuffle=False)
+        for data in iter(val_loader):
+            inputs, target = data
+            outputs = self.model(inputs.float())
+        return inputs, target, outputs

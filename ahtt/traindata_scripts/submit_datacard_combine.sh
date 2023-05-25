@@ -1,9 +1,9 @@
 #!/bin/bash
-masses='m400,m500,m600,m700,m800,m900,m1000'
+masses='m500,m525,m550,m575,m600,m625,m650,m675,m700,m725,m750,m775,m800,m825,m850,m875,m900,m925,m950,m975,m1000'
 widths='w1p0,w2p5,w5p0,w10p0,w25p0'
 pairs="${masses};${widths};${masses};${widths}"
-N_JOB=50
-TAG="hundreds"
+N_JOB=400
+TAG="highmass"
 
 mkdir ./../data/${TAG}
 mkdir ./../data/${TAG}/condor
@@ -45,14 +45,12 @@ for datapoint in "${mixed_points[@]}"; do
     IFS=';' read -ra values <<< "$datapoint"
     converted_points+=("A_${values[0]}_${values[1]},H_${values[2]}_${values[3]}")
 done
-
 # Get the length of the array
 array_length=${#converted_points[@]}
 
 # Calculate the subarray size
 subarray_size=$(( array_length / N_JOB ))
 remainder=$(( array_length % N_JOB ))
-
 # Create the subarrays
 subarrays=()
 start=0
@@ -74,8 +72,8 @@ for ((i = 0; i < N_JOB; i++)); do
     done
     subarray+=("${subarray:1}")
     pwd
-    echo ${subarray}
-    echo ${TAG}
+    #echo ${subarray}
+    #echo ${TAG}
     sed -i -e "s|PAIRS|${subarray}|g"  datacard_combine_local.sh
     sed -i -e "s|SUBFOLD|subfold_${i}|g"  condor.sub
     sed -i -e "s|SUBFOLD|subfold_${i}|g"  datacard_combine_local.sh
