@@ -23,8 +23,8 @@ def main():
     sns.histplot(df, x="limit2", ax=ax2)
     sns.histplot(df, x="m1", ax=ax3)
     sns.histplot(df, x="m2", ax=ax4)
-    sns.histplot(df, x="limit2", hue="m1", ax=ax5)
-    sns.histplot(df, x="limit2", hue="m2", ax=ax6)
+    sns.histplot(df, x="limit2", hue="m1", ax=ax5, multiple="stack")
+    sns.histplot(df, x="limit2", hue="m2", ax=ax6, multiple="stack")
     plt.tight_layout()
     fig.savefig('limits_'+args.Tag+'_'+args.Expectation+'.pdf', dpi=200)
 
