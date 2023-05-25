@@ -18,7 +18,7 @@ def main():
     with pd.HDFStore(file_path, mode='r') as store:
         if 'df' in store:
             df = store['df']
-    fig, ((ax1, ax2), (ax3, ax4), (ax5, ax6)) = plt.subplots(3, 2)
+    fig, ((ax1, ax2), (ax3, ax4), (ax5, ax6)) = plt.subplots(3, 2, figsize=(30, 10))
     sns.histplot(df, x="limit1", ax=ax1)
     sns.histplot(df, x="limit2", ax=ax2)
     sns.histplot(df, x="m1", ax=ax3)
