@@ -2,7 +2,7 @@
 masses='m500,m525,m550,m575,m600,m625,m650,m675,m700,m725,m750,m775,m800,m825,m850,m875,m900,m925,m950,m975,m1000'
 widths='w1p0,w2p5,w5p0,w10p0,w25p0'
 pairs="${masses};${widths};${masses};${widths}"
-N_JOB=400
+#N_JOB=400
 TAG="highmass"
 
 mkdir ./../data/${TAG}
@@ -39,6 +39,9 @@ for ((i = 0; i < subarray_length[0]; i++)); do
 	done
     done
 done
+length=${#mixed_points[@]}
+N_JOB=$((length / 2))
+echo "gonna submit ${N_JOB} jobs"
 # Convert the datapoints into the desired format
 converted_points=()
 for datapoint in "${mixed_points[@]}"; do
