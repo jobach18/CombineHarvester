@@ -46,6 +46,7 @@ def main():
     root_folder = "./"
     df = pd.DataFrame(columns=['m1', 'm2', 'w1', 'w2', 'limit1', 'limit2'])
     i = 0
+    fail_ind = 0
     matching_folders = []
     # Find all folders starting with "A" in the root folder
     for subfolder in os.listdir(root_folder):
@@ -73,7 +74,16 @@ def main():
     for folder in tqdm(fold_of_job):
         subfolder_path = os.path.join(root_folder, folder)
         # Build the path to the subfolder starting with "fc-results"
-        fc_results_folder = next((subfolder for subfolder in os.listdir(subfolder_path) if subfolder.startswith("fc-result")), None)
+        try:
+            fc_results_folder_arr = (subfolder for subfolder in os.listdir(subfolder_path) if subfolder.startswith("fc-result"))
+            for fc_results_folder in fc_results_folder_arr:
+                if len(os.listdir(os.path.join(subfolder_path, fc_results_folder))) == 0:
+                    pass
+                else:
+                    break
+        except NotADirectoryError:
+            fail_ind += 1
+            continue
         final_folder = os.path.join(subfolder_path, fc_results_folder)
         # Check if the subfolder exist)s
         if os.path.exists(final_folder) and os.path.isdir(final_folder):
@@ -97,6 +107,8 @@ def main():
                         "limit2" : dataframe[1],}
             df.loc[i] = new_row
             i = i +1
+    print(f' this job successfully processed {i} folder')
+    print(f' {fail_ind} folders were tar.gz files')
     df.to_hdf('train_data_'+expectation+"_"+args.JobId+'.h5', key='df', mode='w')
 if __name__=="__main__":
     main()

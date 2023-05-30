@@ -3,9 +3,9 @@
 SUBMIT_DIR = /nfs/dust/cms/user/bachjoer/ml-workspace/learn_likelihood/CMSSW_10_2_13/src/CombineHarvester/ahtt/data/DIRE 
 executable              = $(SUBMIT_DIR)/SUBFOLD/datacard_combine_local.sh
 arguments               = "-p PAIRS -t TAGGED"
-log                     = $(SUBMIT_DIR)/condor/logs/log.o$(Cluster).$(Process)
-output                  = $(SUBMIT_DIR)/condor/outputs/out.o$(Cluster).$(Process) 
-error                   = $(SUBMIT_DIR)/condor/errors/error.o$(Cluster).$(Process)
+log                     = $(SUBMIT_DIR)/condor/logs/log.combine_o$(Cluster).$(Process)
+output                  = $(SUBMIT_DIR)/condor/outputs/out.combine_o$(Cluster).$(Process) 
+error                   = $(SUBMIT_DIR)/condor/errors/error.combine_o$(Cluster).$(Process)
 getenv = TRUE
 #should_transfer_files   = NO 
 when_to_transfer_output = ON_EXIT_OR_EVICT
