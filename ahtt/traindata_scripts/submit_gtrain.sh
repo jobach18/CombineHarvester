@@ -1,7 +1,9 @@
 #!/bin/bash
-masses='m365,m380,m400,m425,m450,m475,m500,m525,m550,m575,m600,m625,m650,m675,m700,m725,m750,m775,m800,m825,m850,m875,m900,m925,m950,m975,m1000'
+#masses='m365,m380,m400,m425,m450,m475,m500,m525,m550,m575,m600,m625,m650,m675,m700,m725,m750,m775,m800,m825,m850,m875,m900,m925,m950,m975,m1000'
+masses='m400'
 widths='w1p0,w2p5,w5p0,w10p0,w25p0'
 pairs="${masses};${widths};${masses};${widths}"
+gs=10
 #N_JOB=400
 TAG="allmass"
 
@@ -10,8 +12,8 @@ mkdir ./../data/${TAG}/condor
 mkdir ./../data/${TAG}/condor/errors
 mkdir ./../data/${TAG}/condor/outputs
 mkdir ./../data/${TAG}/condor/logs
-cp template/condor.sub ./../data/${TAG}/
-cp template/datacard_combine_local.sh ./../data/${TAG}/
+cp template_gtrain/condor.sub ./../data/${TAG}/
+cp template_gtrain/datacard_combine_local.sh ./../data/${TAG}/
 sed -i -e "s|DIRE|${TAG}|g"  ./../data/${TAG}/condor.sub
 sed -i -e "s|TAGGED|${TAG}|g"  ./../data/${TAG}/datacard_combine_local.sh
 cd ../data/${TAG}/ 

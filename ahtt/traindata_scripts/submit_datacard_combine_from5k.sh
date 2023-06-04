@@ -1,9 +1,9 @@
 #!/bin/bash
-masses='m365,m380,m400,m425,m450,m475,m500,m525,m550,m575,m600,m625,m650,m675,m700,m725,m750,m775,m800,m825,m850,m875,m900,m925,m950,m975,m1000'
+masses='m365,m380,m400,m425,m450,m475,m500,m525,m550,m575,m600,m625,m650,m675,m700'
 widths='w1p0,w2p5,w5p0,w10p0,w25p0'
 pairs="${masses};${widths};${masses};${widths}"
 #N_JOB=400
-TAG="allmass"
+TAG="lowmass"
 
 mkdir ./../data/${TAG}
 mkdir ./../data/${TAG}/condor
@@ -57,7 +57,7 @@ remainder=$(( array_length % N_JOB ))
 # Create the subarrays
 subarrays=()
 start=0
-for ((i = 0; i < N_JOB; i++)); do
+for ((i = 5000; i < N_JOB; i++)); do
     mkdir subfold_${i}
     cp condor.sub subfold_${i}/
     cp datacard_combine_local.sh subfold_${i}/
