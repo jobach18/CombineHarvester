@@ -44,7 +44,7 @@ def main():
     expectation = args.Expectation 
     # Root folder where the search begins
     root_folder = "./"
-    df = pd.DataFrame(columns=['m1', 'm2', 'w1', 'w2', 'limit1', 'limit2'])
+    df = pd.DataFrame(columns=['m1', 'm2', 'w1', 'w2', 'limit1', 'limit2', 'g1', 'g2'])
     i = 0
     fail_ind = 0
     matching_folders = []
@@ -97,6 +97,8 @@ def main():
             with uproot.open(root_file_path) as file:
                 tree = file["limit"]
                 dataframe = tree["nll"].array(library="pd")
+                g1 = tree["g1"].array(library="pd")
+                g2 = tree["g2"].array(library="pd")
             #dataframe = pd.concat(uproot.iterate(root_file_path, "limit", library='pd'))
             m1_value, m2_value, w1_value, w2_value = extract_info_from_foldername(folder)
             new_row = { "m1" : m1_value,
@@ -104,7 +106,10 @@ def main():
                         "w1" : w1_value,
                         "w2" : w2_value,
                         "limit1" : dataframe[0],
-                        "limit2" : dataframe[1],}
+                        "limit2" : dataframe[1],
+			"g1" : g1[1],
+			"g2" : g2[1],
+			}
             df.loc[i] = new_row
             i = i +1
     print(f' this job successfully processed {i} folder')
