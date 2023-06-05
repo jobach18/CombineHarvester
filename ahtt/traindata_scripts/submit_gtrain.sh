@@ -1,11 +1,45 @@
 #!/bin/bash
 #masses='m365,m380,m400,m425,m450,m475,m500,m525,m550,m575,m600,m625,m650,m675,m700,m725,m750,m775,m800,m825,m850,m875,m900,m925,m950,m975,m1000'
-masses='m400'
-widths='w1p0,w2p5,w5p0,w10p0,w25p0'
+masses='m400,m500'
+widths="w1p0,w2p5"
+#widths='w1p0,w2p5,w5p0,w10p0,w25p0'
 pairs="${masses};${widths};${masses};${widths}"
-gs=10
-#N_JOB=400
-TAG="allmass"
+TAG="gtest"
+
+
+gones=10
+gtwos=10
+# Calculate the step size for evenly spreading the entries
+step=$(bc <<< "scale=2; 3 / ($gones - 1)")
+
+# Prepare the array
+gone_array=()
+
+# Populate the array with evenly spread values between 0 and 3
+for ((i = 0; i < $gones; i++)); do
+  value=$(bc <<< "scale=2; $i * $step")
+  gone_array+=("$value")
+done
+
+# Calculate the step size for evenly spreading the entries
+step=$(bc <<< "scale=2; 3 / ($gtwos - 1)")
+
+# Prepare the array
+gtwo_array=()
+
+# Populate the array with evenly spread values between 0 and 3
+for ((i = 0; i < $gtwos; i++)); do
+  value=$(bc <<< "scale=2; $i * $step")
+  gtwo_array+=("$value")
+done
+gpoints=()
+for ((i = 0; i < $gones; i++)); do
+    for ((j = 0; j < $gtwos; j++)); do
+	gpoints+=("${gone_array[i]},${gtwo_array[j]}")
+    done 
+done
+
+
 
 mkdir ./../data/${TAG}
 mkdir ./../data/${TAG}/condor
@@ -41,6 +75,10 @@ for ((i = 0; i < subarray_length[0]; i++)); do
 	done
     done
 done
+
+
+#figure out the lengths
+#length=${#mixed_points[@]}+${#gpoints[@]}
 length=${#mixed_points[@]}
 N_JOB=$((length / 2))
 echo "gonna submit ${N_JOB} jobs"
@@ -59,31 +97,33 @@ remainder=$(( array_length % N_JOB ))
 # Create the subarrays
 subarrays=()
 start=0
+ikey=0
 for ((i = 0; i < N_JOB; i++)); do
-    mkdir subfold_${i}
-    cp condor.sub subfold_${i}/
-    cp datacard_combine_local.sh subfold_${i}/
-    cd subfold_${i}
     subarray=()
     end=$(( start + subarray_size ))
     if [ $i -lt $remainder ]; then
-        end=$(( end + 1 ))
-    fi
+	end=$(( end + 1 ))
+    fi 
     for ((j = start; j < end; j++)); do
-        subarray+=("${converted_points[j]}")
+	subarray+=("${converted_points[j]}")
     done
     for entry in "${subarray[@]}"; do
-	    subarray+=";$entry"
+       subarray+=";$entry"
     done
     subarray+=("${subarray:1}")
-    pwd
-    #echo ${subarray}
-    #echo ${TAG}
-    sed -i -e "s|PAIRS|${subarray}|g"  datacard_combine_local.sh
-    sed -i -e "s|SUBFOLD|subfold_${i}|g"  condor.sub
-    sed -i -e "s|SUBFOLD|subfold_${i}|g"  datacard_combine_local.sh
-    #condor_submit PAIRS=${subarray} TAGS=${TAG} condor.sub 
-    condor_submit  condor.sub 
-    cd ..
-    start=$end
+    for gp in ${gpoints[@]}; do
+    	mkdir subfold_${ikey}
+    	cp condor.sub subfold_${ikey}/
+    	cp datacard_combine_local.sh subfold_${ikey}/
+    	cd subfold_${ikey}
+    	sed -i -e "s|PAIRS|${subarray}|g"  datacard_combine_local.sh
+    	sed -i -e "s|SUBFOLD|subfold_${i}|g"  condor.sub
+    	sed -i -e "s|SUBFOLD|subfold_${i}|g"  datacard_combine_local.sh
+    	sed -i -e "s|COUPL|$gp|g"  datacard_combine_local.sh
+    	#condor_submit PAIRS=${subarray} TAGS=${TAG} condor.sub 
+    	condor_submit  condor.sub 
+    	cd ..
+	ikey=$(($ikey + 1))
+   done 
+   start=$end
 done
