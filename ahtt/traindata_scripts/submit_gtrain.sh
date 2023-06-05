@@ -10,26 +10,26 @@ TAG="gtest"
 gones=10
 gtwos=10
 # Calculate the step size for evenly spreading the entries
-step=$(bc <<< "scale=2; 3 / ($gones - 1)")
+step=$(awk -v gones=$gones 'BEGIN { print 3 / (gones - 1) }')
 
 # Prepare the array
 gone_array=()
 
 # Populate the array with evenly spread values between 0 and 3
 for ((i = 0; i < $gones; i++)); do
-  value=$(bc <<< "scale=2; $i * $step")
+  value=$(awk -v i=$i -v step=$step 'BEGIN { printf "%.1f", i * step }')
   gone_array+=("$value")
 done
 
 # Calculate the step size for evenly spreading the entries
-step=$(bc <<< "scale=2; 3 / ($gtwos - 1)")
+step=$(awk -v gones=$gones 'BEGIN { print 3 / (gones - 1) }')
 
 # Prepare the array
 gtwo_array=()
 
 # Populate the array with evenly spread values between 0 and 3
 for ((i = 0; i < $gtwos; i++)); do
-  value=$(bc <<< "scale=2; $i * $step")
+  value=$(awk -v i=$i -v step=$step 'BEGIN { printf "%.1f", i * step }')
   gtwo_array+=("$value")
 done
 gpoints=()
