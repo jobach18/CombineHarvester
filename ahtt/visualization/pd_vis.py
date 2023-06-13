@@ -11,7 +11,7 @@ def main():
     parser.add_argument("-tag", "--Tag", help= "tag that the limits were calculated with before, gives the directory the roots are in.")
     args = parser.parse_args()
     #load the data from a specified directory with pandas dataframes in h5 files
-    file_path = "../data/" + args.Tag+"/res_exps/train_data_"+ args.Expectation  + "_full.h5"
+    file_path = "../data/" + args.Tag+"/train_data_"+ args.Expectation  + "_full.h5"
     with pd.HDFStore(file_path, mode='r') as store:
         if 'df' in store:
             df = store['df']
