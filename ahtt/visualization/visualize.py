@@ -39,7 +39,7 @@ def main():
     with pd.HDFStore(file_path, mode='r') as store:
         if 'df' in store:
             df = store['df']
-    print(df)
+    print(f'the dataset has {len(df)} entries')
     overviewplot(df, args)
     df_tags = ["m1", "m2", "w1", "w2"]
     for i, ikey in enumerate(df_tags):
