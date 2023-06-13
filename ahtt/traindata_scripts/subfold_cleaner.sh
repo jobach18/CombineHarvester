@@ -1,6 +1,6 @@
 #!/bin/bash
 
-root_folder="/nfs/dust/cms/user/bachjoer/ml-workspace/learn_likelihood/CMSSW_10_2_13/src/CombineHarvester/ahtt/data/lowmass/"
+root_folder="/nfs/dust/cms/user/bachjoer/ml-workspace/learn_likelihood/CMSSW_10_2_13/src/CombineHarvester/ahtt/data/gtest/"
 
 # Find all directories starting with "subfold_" in the root folder
 directories=$(find "$root_folder" -type d -name 'subfold_*')

@@ -1,14 +1,15 @@
 #!/bin/bash
+########################PARAMETERS########################################################
 #masses='m365,m380,m400,m425,m450,m475,m500,m525,m550,m575,m600,m625,m650,m675,m700,m725,m750,m775,m800,m825,m850,m875,m900,m925,m950,m975,m1000'
 masses='m400,m500'
 widths="w1p0,w2p5"
 #widths='w1p0,w2p5,w5p0,w10p0,w25p0'
 pairs="${masses};${widths};${masses};${widths}"
 TAG="gtest"
-
-
+#number of g1 and g2 values
 gones=10
 gtwos=10
+##########################################################################################
 # Calculate the step size for evenly spreading the entries
 step=$(awk -v gones=$gones 'BEGIN { print 3 / (gones - 1) }')
 
@@ -117,8 +118,8 @@ for ((i = 0; i < N_JOB; i++)); do
     	cp datacard_combine_local.sh subfold_${ikey}/
     	cd subfold_${ikey}
     	sed -i -e "s|PAIRS|${subarray}|g"  datacard_combine_local.sh
-    	sed -i -e "s|SUBFOLD|subfold_${i}|g"  condor.sub
-    	sed -i -e "s|SUBFOLD|subfold_${i}|g"  datacard_combine_local.sh
+    	sed -i -e "s|SUBFOLD|subfold_${ikey}|g"  condor.sub
+    	sed -i -e "s|SUBFOLD|subfold_${ikey}|g"  datacard_combine_local.sh
     	sed -i -e "s|COUPL|$gp|g"  datacard_combine_local.sh
     	#condor_submit PAIRS=${subarray} TAGS=${TAG} condor.sub 
     	condor_submit  condor.sub 
