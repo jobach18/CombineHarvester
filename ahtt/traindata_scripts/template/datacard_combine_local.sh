@@ -16,6 +16,7 @@ channels='ee,em,mm,e3j,e4pj,m3j,m4pj'
 years='2016pre,2016post,2017,2018'
 ntoy='0'
 idxs='..25'
+<<<<<<< HEAD
 #exps='exp-b,exp-s,exp-01,exp-10'
 exps='exp-s'
 keeps='eff_b,eff_e,eff_m_id,eff_m_iso,eff_trigger,fake,JEC,JER,MET,QCDscale,hdamp,tmass,EWK,alphaS,PDF_PCA_0,L1,EWQCD,pileup,lumi,norm,UEtune,CR_ERD,CR_QCD'
