@@ -13,6 +13,7 @@ def main():
     #load the data from a specified directory with pandas dataframes in h5 files
     file_path = "../data/" + args.Tag+"/train_data_"+ args.Expectation  + "_full.h5"
     with pd.HDFStore(file_path, mode='r') as store:
+        print(store)
         if 'df' in store:
             df = store['df']
     print(f'the dataset has {len(df)} entries')

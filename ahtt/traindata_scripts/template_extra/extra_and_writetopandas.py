@@ -40,6 +40,7 @@ def main():
     parser.add_argument("-tag", "--Tag", help= "tag that the limits were calculated with before, gives the directory the roots are in.")
     parser.add_argument("-id", "--JobId", help= "Id of this job")
     parser.add_argument("-js", "--JobSize", help= "size of the job in #jobs")
+    parser.add_argument("-m", '--Mode', help="mode that the NLL was calculated with by combine", default='nll')
     args = parser.parse_args()
     expectation = args.Expectation 
     # Root folder where the search begins
@@ -73,23 +74,31 @@ def main():
     # Iterate over the matching folders
     for folder in tqdm(fold_of_job):
         subfolder_path = os.path.join(root_folder, folder)
-        # Build the path to the subfolder starting with "fc-results"
-        try:
-            fc_results_folder_arr = (subfolder for subfolder in os.listdir(subfolder_path) if subfolder.startswith("fc-result"))
-            for fc_results_folder in fc_results_folder_arr:
-                if len(os.listdir(os.path.join(subfolder_path, fc_results_folder))) == 0:
-                    pass
-                else:
-                    break
-        except NotADirectoryError:
-            fail_ind += 1
-            continue
-        final_folder = os.path.join(subfolder_path, fc_results_folder)
+        if args.Mode == "contour":
+                # Build the path to the subfolder starting with "fc-results"
+                try:
+                    fc_results_folder_arr = (subfolder for subfolder in os.listdir(subfolder_path) if subfolder.startswith("fc-result"))
+                    for fc_results_folder in fc_results_folder_arr:
+                        if len(os.listdir(os.path.join(subfolder_path, fc_results_folder))) == 0:
+                            pass
+                        else:
+                            break
+                except NotADirectoryError:
+                    print('failed')
+                    fail_ind += 1
+                    continue
+                final_folder = os.path.join(subfolder_path, fc_results_folder)
+        elif args.Mode == "nll":
+            final_folder = os.path.join(root_folder, folder)
         # Check if the subfolder exist)s
         if os.path.exists(final_folder) and os.path.isdir(final_folder):
                 # Find the .root file in the subfolder
                 expectation = args.Expectation 
-                root_file = next((file for file in os.listdir(final_folder) if file.endswith(expectation+".root")), None)
+                if args.Mode == "nll":
+                     root_file = next((file for file in os.listdir(final_folder) if file.endswith(".root") and expectation in str(file)), None)
+                elif args.Mode == "contour":
+                     root_file = next((file for file in os.listdir(final_folder) if file.endswith(expectation+".root")), None)
+		print(root_file)
         # Check if a .root file was found
         if root_file is not None:
             # Open the .root file and read data from the "limits" branch into a pandas dataframe
