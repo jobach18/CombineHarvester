@@ -5,7 +5,7 @@ widths='w1p0,w2p5,w5p0,w10p0,w25p0'
 #widths='w2p5'
 pairs="${masses};${widths};${masses};${widths}"
 #N_JOB=400
-TAG="lowmass_someg_contour"
+TAG="lowmass_someg_nllnotoys"
 
 mkdir ./../data/${TAG}
 mkdir ./../data/${TAG}/condor
