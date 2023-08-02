@@ -263,7 +263,7 @@ def read_category_process_nuisance(ofile, inames, channel, year, cpn, pseudodata
         for key in keys:
             kname = key.GetName()
 
-            if pp + '_' in kname and kname.endswith("Up"):
+            if kname.startswith(pp + '_') and kname.endswith("Up"):
                 nn1 = "".join(kname.rsplit("Up", 1)).replace(pp + '_', "", 1)
                 if nn1 in read_category_process_nuisance.specials:
                     nn2 = nn1 if (year in read_category_process_nuisance.specials[nn1][0] or year in nn1) else nn1 + '_' + year
@@ -428,7 +428,7 @@ def read_category_process_nuisance(ofile, inames, channel, year, cpn, pseudodata
                 hu.SetName(hu.GetName().replace(nn1, nn2))
                 hd.SetName(hd.GetName().replace(nn1, nn2))
 
-                if "_neg" in pp:
+                if "_neg" in pp and "EWK_TT" not in pp:
                     scale(hu, -1.)
                     scale(hd, -1.)
                 else:
@@ -495,19 +495,19 @@ def read_category_process_nuisance(ofile, inames, channel, year, cpn, pseudodata
     for pp, nn in zip(processes, nuisances):
         cpn[odir][pp[0]] = nn
 
-def make_pseudodata(ofile, cpn, replaces, sigpnt = None, seed = None):
+def make_pseudodata(ofile, cpn, replaces, injsig = None, assig = None, seed = None):
     if seed is None or seed >= 0:
         rng.seed(seed)
 
     for category, processes in cpn.items():
         dd = None
         for pp in processes.keys():
-            issig = any([ss in pp for ss in ["_res", "_pos", "_neg"]])
+            issig = any([ss in pp for ss in ["_res", "_pos", "_neg"]]) or (assig is not None and any([ss in pp for ss in assig]))
             hh = ofile.Get(category + '/' + pp).Clone("hhtmphh")
             if "_neg" in pp:
                 scale(hh, -1.)
 
-            if not issig or (issig and sigpnt is not None and any([s in pp for s in sigpnt])):
+            if not issig or (issig and injsig is not None and any([ss in pp for ss in injsig])):
                 if dd is None:
                     dd = hh.Clone("data_obs")
                 else:
@@ -531,7 +531,7 @@ def make_pseudodata(ofile, cpn, replaces, sigpnt = None, seed = None):
         ofile.cd(category)
         dd.Write()
 
-def write_datacard(oname, cpn, years, sigpnt, injsig, drops, keeps, mcstat, rateparam, tag):
+def write_datacard(oname, cpn, years, sigpnt, injsig, assig, drops, keeps, mcstat, rateparam, tag):
     # to note nuisances that need special handling
     # 'regular' nuisances are those that are uncorrelated between years with a scaling of 1
     if not hasattr(write_datacard, "lnNs"):
@@ -637,13 +637,21 @@ def write_datacard(oname, cpn, years, sigpnt, injsig, drops, keeps, mcstat, rate
     mstr = str( get_point(sigpnt[0])[1] )
     groups = {}
 
+    realsignal = [] + sigpnt
+    notbackground = [] + sigpnt
+    if injsig is not None:
+        notbackground += injsig
+    if assig is not None:
+        notbackground += assig
+        realsignal += assig
+
     cb.AddObservations(['*'], ["ahtt"], ["13TeV"], [""], categories.items())
     for iicc in categories.items():
         ii = iicc[0]
         cc = iicc[1]
 
-        sigs = [pp for pp in cpn[cc].keys() if any([ss in pp for ss in sigpnt])]
-        bkgs = [pp for pp in cpn[cc].keys() if pp != "data_obs" and not any([ss in pp for ss in sigpnt]) and (injsig == None or not any([ss in pp for ss in injsig]))]
+        sigs = [pp for pp in cpn[cc].keys() if any([ss in pp for ss in realsignal])]
+        bkgs = [pp for pp in cpn[cc].keys() if pp != "data_obs" and not any([ss in pp for ss in notbackground])]
         cb.AddProcesses([''], ["ahtt"], ["13TeV"], [""], sigs, [iicc], True)
         cb.AddProcesses(['*'], ["ahtt"], ["13TeV"], [""], bkgs, [iicc], False)
 
@@ -749,6 +757,8 @@ if __name__ == '__main__':
 
     parser.add_argument("--inject-signal", help = combine_help_messages["--inject-signal"], dest = "inject", default = "", required = False,
                         type = lambda s: None if s == "" else sorted(tokenize_to_list( remove_spaces_quotes(s) )))
+    parser.add_argument("--as-signal", help = combine_help_messages["--as-signal"], dest = "assignal", default = "", required = False,
+                        type = lambda s: None if s == "" else sorted(tokenize_to_list( remove_spaces_quotes(s) )))
 
     parser.add_argument("--projection", help = combine_help_messages["--projection"], default = "", required = False,
                         type = lambda s: [] if s == "" else tokenize_to_list( remove_spaces_quotes(s) ))
@@ -806,7 +816,7 @@ if __name__ == '__main__':
 
     if args.pseudodata:
         print "using ", args.seed, "as seed for pseudodata generation"
-        make_pseudodata(output, cpn, args.repnom, args.inject, args.seed if args.seed != 0 else None)
+        make_pseudodata(output, cpn, args.repnom, args.inject, args.assignal, args.seed if args.seed != 0 else None)
     output.Close()
 
-    write_datacard(oname, cpn, args.year, args.point, args.inject, args.drop, args.keep, args.mcstat, args.rateparam, args.tag)
+    write_datacard(oname, cpn, args.year, args.point, args.inject, args.assignal, args.drop, args.keep, args.mcstat, args.rateparam, args.tag)
