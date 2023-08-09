@@ -98,29 +98,31 @@ def main():
                      root_file = next((file for file in os.listdir(final_folder) if file.endswith(".root") and expectation in str(file)), None)
                 elif args.Mode == "contour":
                      root_file = next((file for file in os.listdir(final_folder) if file.endswith(expectation+".root")), None)
-		print(root_file)
         # Check if a .root file was found
         if root_file is not None:
             # Open the .root file and read data from the "limits" branch into a pandas dataframe
             root_file_path = os.path.join(final_folder, root_file)
+            #print(root_file_path)
             with uproot.open(root_file_path) as file:
                 tree = file["limit"]
                 dataframe = tree["nll"].array(library="pd")
                 g1 = tree["g1"].array(library="pd")
                 g2 = tree["g2"].array(library="pd")
+                #print(f' lim vals are {dataframe} of which the 0 entry is {dataframe[0]}')
             #dataframe = pd.concat(uproot.iterate(root_file_path, "limit", library='pd'))
             m1_value, m2_value, w1_value, w2_value = extract_info_from_foldername(folder)
-            new_row = { "m1" : m1_value,
+            for ig in range(len(g1)):
+                new_row = { "m1" : m1_value,
                         "m2" : m2_value,
                         "w1" : w1_value,
                         "w2" : w2_value,
-                        "limit1" : dataframe[0],
-                        "limit2" : dataframe[1],
-			"g1" : g1[1],
-			"g2" : g2[1],
+                        "limit1" : dataframe[ig],
+                        "limit2" : dataframe[ig],
+			"g1" : g1[ig],
+			"g2" : g2[ig],
 			}
-            df.loc[i] = new_row
-            i = i +1
+                df.loc[i] = new_row
+                i = i +1
     print(f' this job successfully processed {i} folder')
     print(f' {fail_ind} folders were tar.gz files')
     df.to_hdf('train_data_'+expectation+"_"+args.JobId+'.h5', key='df', mode='w')
