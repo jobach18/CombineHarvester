@@ -19,7 +19,7 @@ def main():
     print(f'the dataset has {len(df)} entries')
     fig, (ax1) = plt.subplots(1,1, figsize=(10,10))
     pd.plotting.scatter_matrix(df, ax=ax1)
-    fig.savefig('plots/scattermatrix_'+args.Tag+'_'+args.Expectation+'.pdf', dpi=200)
+    fig.savefig('plots/scattermatrix_'+args.Tag+'_'+args.Expectation+'.pdf', dpi=100)
 
 if __name__=="__main__":
     main()
