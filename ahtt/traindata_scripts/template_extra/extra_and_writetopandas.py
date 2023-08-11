@@ -108,10 +108,14 @@ def main():
                 dataframe = tree["nll"].array(library="pd")
                 g1 = tree["g1"].array(library="pd")
                 g2 = tree["g2"].array(library="pd")
+                quantE = tree["quantileExpected"].array(library="pd")
+                dataframe = dataframe[quantE!=-1]
+                g1 = g1[quantE!=-1]
+                g2 = g2[quantE!=-1]
                 #print(f' lim vals are {dataframe} of which the 0 entry is {dataframe[0]}')
             #dataframe = pd.concat(uproot.iterate(root_file_path, "limit", library='pd'))
             m1_value, m2_value, w1_value, w2_value = extract_info_from_foldername(folder)
-            for ig in range(len(g1)):
+            for ig in dataframe.index:
                 new_row = { "m1" : m1_value,
                         "m2" : m2_value,
                         "w1" : w1_value,
