@@ -11,4 +11,4 @@ conda activate train
 #source /nfs/dust/cms/user/bachjoer/pepper_jorn/pepper-master/example/environment.sh
 cd /nfs/dust/cms/user/bachjoer/ml-workspace/learn_likelihood/CMSSW_10_2_13/src/CombineHarvester/ahtt/data/$3
 cmsenv
-python3 extra_and_writetopandas.py  -id $1 -js $2 -tag $3 -exp $4 -m "contour"
+python3 extra_and_writetopandas_NP.py  -id $1 -js $2 -tag $3 -exp $4 -m "contour"
