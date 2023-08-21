@@ -105,18 +105,18 @@ def main():
             with uproot.open(root_file_path) as file:
                 tree = file["limit"]
                 quantE = tree["quantileExpected"].array(library="pd")
-		# Get the list of branch names
-		branch_names = tree.keys()
-		# Create an empty dictionary to store data
-		data_dict = {branch_name: tree[branch_name].array(library="pd")[quantE!=-1] for branch_name in branch_names}
+                # Get the list of branch names
+                branch_names = tree.keys()
+                # Create an empty dictionary to store data
+                data_dict = {branch_name: tree[branch_name].array(library="pd")[quantE!=-1] for branch_name in branch_names}
 
-		# Convert the dictionary to a Pandas DataFrame
+                # Convert the dictionary to a Pandas DataFrame
                 m1_value, m2_value, w1_value, w2_value = extract_info_from_foldername(folder)
                 data_dict["m1"] = np.zeros_like(tree['nll'].array(library="pd")[quantE!=-1]) + m1_value
                 data_dict["m2"] = np.zeros_like(tree['nll'].array(library="pd")[quantE!=-1]) + m2_value
                 data_dict["w1"] = np.zeros_like(tree['nll'].array(library="pd")[quantE!=-1]) + w1_value
                 data_dict["w2"] = np.zeros_like(tree['nll'].array(library="pd")[quantE!=-1]) + w2_value
-		df = pd.DataFrame(data_dict)
+                df = pd.DataFrame(data_dict)
     print(f' this job successfully processed {i} folder')
     print(f' {fail_ind} folders were tar.gz files')
     df.to_hdf('train_data_NP_'+expectation+"_"+args.JobId+'.h5', key='df', mode='w')
