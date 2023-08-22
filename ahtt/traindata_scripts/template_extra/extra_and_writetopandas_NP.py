@@ -101,7 +101,7 @@ def main():
         if root_file is not None:
             # Open the .root file and read data from the "limits" branch into a pandas dataframe
             root_file_path = os.path.join(final_folder, root_file)
-            #print(root_file_path)
+            print(f' opening file: {root_file_path}')
             with uproot.open(root_file_path) as file:
                 tree = file["limit"]
                 quantE = tree["quantileExpected"].array(library="pd")
