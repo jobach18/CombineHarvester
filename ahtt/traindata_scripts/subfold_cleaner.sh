@@ -1,9 +1,10 @@
 #!/bin/bash
 
-root_folder="/nfs/dust/cms/user/bachjoer/ml-workspace/learn_likelihood/CMSSW_10_2_13/src/CombineHarvester/ahtt/data/allmass/"
+root_folder="/nfs/dust/cms/user/bachjoer/ml-workspace/learn_likelihood/CMSSW_10_2_13/src/CombineHarvester/ahtt/data/sparsehighmass_someg_nllnotoys/"
 
 # Find all directories starting with "subfold_" in the root folder
 directories=$(find "$root_folder" -type d -name 'subfold_*')
+echo $directories
 
 # Iterate through each directory and delete the specified files
 for dir in $directories; do

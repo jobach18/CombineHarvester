@@ -18,6 +18,10 @@ def main():
             #df.convert_dtypes(convert_floating=True)
             df = df.apply(pd.to_numeric, errors='coerce')
     print(f'the dataset has {len(df)} entries')
+    print(f' with {len(df.keys())} columns.')
+    if len(df.keys()) > 5:
+         df = df[df.keys()[:5]]
+    print(df)
     fig, (ax1) = plt.subplots(1,1, figsize=(10,10))
     pd.plotting.scatter_matrix(df, ax=ax1)
     fig.savefig('plots/scattermatrix_'+args.Tag+'_'+args.Expectation+'.png',dpi=100)
