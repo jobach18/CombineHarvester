@@ -107,6 +107,7 @@ def main():
                 quantE = tree["quantileExpected"].array(library="pd")
                 # Get the list of branch names
                 branch_names = tree.keys()
+                branch_names_rel = [string for string in branch_names if not string.startswith("prop")]
                 # Create an empty dictionary to store data
                 data_dict = {branch_name: tree[branch_name].array(library="pd")[quantE!=-1] for branch_name in branch_names}
 
