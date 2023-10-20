@@ -90,6 +90,7 @@ def main():
         elif args.Mode == "nll":
             final_folder = os.path.join(root_folder, folder)
         # Check if the subfolder exist)s
+        print(f'the final folder is {final_folder}')
         if os.path.exists(final_folder) and os.path.isdir(final_folder):
                 # Find the .root file in the subfolder
                 expectation = args.Expectation 
@@ -107,9 +108,11 @@ def main():
                 quantE = tree["quantileExpected"].array(library="pd")
                 # Get the list of branch names
                 branch_names = tree.keys()
+                print(f' the branch names are: {branch_names}')
                 branch_names_rel = [string for string in branch_names if not string.startswith("prop")]
+                print(f' the relevant branch names are: {branch_names_rel}')
                 # Create an empty dictionary to store data
-                data_dict = {branch_name: tree[branch_name].array(library="pd")[quantE!=-1] for branch_name in branch_names}
+                data_dict = {branch_name: tree[branch_name].array(library="pd")[quantE!=-1] for branch_name in branch_names_rel}
 
                 # Convert the dictionary to a Pandas DataFrame
                 m1_value, m2_value, w1_value, w2_value = extract_info_from_foldername(folder)
@@ -120,6 +123,6 @@ def main():
                 df = pd.DataFrame(data_dict)
     print(f' this job successfully processed {i} folder')
     print(f' {fail_ind} folders were tar.gz files')
-    df.to_hdf('train_data_NP_'+expectation+"_"+args.JobId+'.h5', key='df', mode='w')
+    df.to_hdf('train_data_NP_'+expectation+"_"+args.JobId+'.h5', key='data', mode='w')
 if __name__=="__main__":
     main()
