@@ -21,8 +21,8 @@ def main():
     dataframes = []
     for file_path in file_list:
         with pd.HDFStore(file_path, mode='r') as store:
-            if 'df' in store:
-                df = store['df']
+            if 'data' in store:
+                df = store['data']
                 dataframes.append(df)
 
     concatenated_df = pd.concat(dataframes, ignore_index=True)

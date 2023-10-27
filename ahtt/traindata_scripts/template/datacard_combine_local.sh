@@ -20,7 +20,7 @@ idxs='..25'
 exps='exp-s'
 keeps='eff_b,eff_e,eff_m_id,eff_m_iso,eff_trigger,fake,JEC,JER,MET,QCDscale,hdamp,tmass,EWK,alphaS,PDF_PCA_0,L1,EWQCD,pileup,lumi,norm,UEtune,CR_ERD,CR_QCD'
 drops='Type3,FlavorQCD_201,TT_norm'
-NGPOINTS=20
+NGPOINTS=200
 NGINT='0,2;0,2'
 
 #python3 /nfs/dust/cms/user/bachjoer/ml-workspace/learn_likelihood/CMSSW_10_2_13/src/CombineHarvester/ahtt/scripts/submit_twin.py --mode 'datacard,validate' --point "${pairs}" --sushi-kfactor --lnN-under-threshold --year "${years}" --channel "${channels}" --tag "${tag}" --keep "${keeps}" --drop "${drops}" --local 
