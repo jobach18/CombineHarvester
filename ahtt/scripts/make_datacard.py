@@ -22,6 +22,7 @@ import CombineHarvester.CombineTools.ch as ch
 
 from utilspy import syscall, get_point, index_list
 from utilslab import kfactor_file_name
+from utilscombine import update_mask
 from utilsroot import flat_reldev_wrt_nominal, scale, zero_out, project, add_scaled_nuisance, apply_relative_nuisance, chop_up, add_original_nominal, read_original_nominal
 
 from desalinator import prepend_if_not_empty, tokenize_to_list, remove_spaces_quotes
@@ -62,7 +63,7 @@ def get_lo_ratio(sigpnt, channel, mtop):
 
 # assumption is some specific list is fully correlated, others fully uncorrelated
 def read_category_process_nuisance(ofile, inames, channel, year, cpn, pseudodata, chops, replaces, drops, keeps, alwaysshape, threshold, lnNsmall,
-                                   projection_rule = "", sigpnt = None, kfactor = False):
+                                   excludeproc = None, bin_masks = None, projection_rule = "", sigpnt = None, kfactor = False):
     # because afiq hates seeing jets spelled outside of text
     if not hasattr(read_category_process_nuisance, "aliases"):
         read_category_process_nuisance.aliases = OrderedDict([
@@ -84,17 +85,20 @@ def read_category_process_nuisance(ofile, inames, channel, year, cpn, pseudodata
 
             ("tmass_AH",                           (("2016pre", "2016post", "2017", "2018"), 1.)),
 
+            ("bindingEnergy_EtaT",                 (("2016pre", "2016post", "2017", "2018"), 1.)),
+            ("tmass_EtaT",                         (("2016pre", "2016post", "2017", "2018"), 1.)),
+
             ("QCDscale_MEFac_TT",                  (("2016pre", "2016post", "2017", "2018"), 1.)),
             ("QCDscale_MERen_TT",                  (("2016pre", "2016post", "2017", "2018"), 1.)),
+
+            ("QCDscale_ISR_TT",                    (("2016pre", "2016post", "2017", "2018"), 1.)),
+            ("QCDscale_FSR_TT",                    (("2016pre", "2016post", "2017", "2018"), 1.)),
 
             ("EWK_yukawa",                         (("2016pre", "2016post", "2017", "2018"), 1.)),
             ("EWK_scheme",                         (("2016pre", "2016post", "2017", "2018"), 1.)),
 
             ("CMS_PDF_alphaS",                     (("2016pre", "2016post", "2017", "2018"), 1.)),
             ("CMS_PDF_hessian",                    (("2016pre", "2016post", "2017", "2018"), 1.)),
-
-            ("QCDscale_ISR_TT",                    (("2016pre", "2016post", "2017", "2018"), 1.)),
-            ("QCDscale_FSR_TT",                    (("2016pre", "2016post", "2017", "2018"), 1.)),
 
             ("hdamp_TT",                           (("2016pre", "2016post", "2017", "2018"), 1.)),
 
@@ -106,6 +110,30 @@ def read_category_process_nuisance(ofile, inames, channel, year, cpn, pseudodata
 
             ("tmass_TT",                           (("2016pre", "2016post", "2017", "2018"), 1.)), # gaussian prior
             #("tmass_TT",                          (("2016pre", "2016post", "2017", "2018"), ("shapeU", 1.))), # flat prior
+
+            ("QCDscale_MEFac_TQ",                  (("2016pre", "2016post", "2017", "2018"), 1.)),
+            ("QCDscale_MERen_TQ",                  (("2016pre", "2016post", "2017", "2018"), 1.)),
+
+            ("QCDscale_ISR_TQ",                    (("2016pre", "2016post", "2017", "2018"), 1.)),
+            ("QCDscale_FSR_TQ",                    (("2016pre", "2016post", "2017", "2018"), 1.)),
+
+            ("QCDscale_MEFac_TW",                  (("2016pre", "2016post", "2017", "2018"), 1.)),
+            ("QCDscale_MERen_TW",                  (("2016pre", "2016post", "2017", "2018"), 1.)),
+
+            ("QCDscale_ISR_TW",                    (("2016pre", "2016post", "2017", "2018"), 1.)),
+            ("QCDscale_FSR_TW",                    (("2016pre", "2016post", "2017", "2018"), 1.)),
+
+            ("QCDscale_MEFac_TB",                  (("2016pre", "2016post", "2017", "2018"), 1.)),
+            ("QCDscale_MERen_TB",                  (("2016pre", "2016post", "2017", "2018"), 1.)),
+
+            ("QCDscale_ISR_TB",                    (("2016pre", "2016post", "2017", "2018"), 1.)),
+            ("QCDscale_FSR_TB",                    (("2016pre", "2016post", "2017", "2018"), 1.)),
+
+            ("QCDscale_MEFac_DY",                  (("2016pre", "2016post", "2017", "2018"), 1.)),
+            ("QCDscale_MERen_DY",                  (("2016pre", "2016post", "2017", "2018"), 1.)),
+
+            ("QCDscale_ISR_DY",                    (("2016pre", "2016post", "2017", "2018"), 1.)),
+            ("QCDscale_FSR_DY",                    (("2016pre", "2016post", "2017", "2018"), 1.)),
 
             ("CMS_pileup",                         (("2016pre", "2016post", "2017", "2018"), 1.)),
 
@@ -165,7 +193,7 @@ def read_category_process_nuisance(ofile, inames, channel, year, cpn, pseudodata
     kfactors = None
     loratios = None
 
-    if sigpnt == None:
+    if sigpnt is None:
         fname = ""
         for iname in inames:
             ifile = TFile.Open(iname, "read")
@@ -185,18 +213,20 @@ def read_category_process_nuisance(ofile, inames, channel, year, cpn, pseudodata
 
             if not kname.endswith("Up") and not kname.endswith("Down") and not kname.endswith("_chi2"):
                 if kname != "data_obs" or not pseudodata:
-                    processes.append((kname, fname))
-                    ofile.cd(odir)
+                    if excludeproc is None or not any([ex in kname for ex in excludeproc]):
+                        processes.append((kname, fname))
+                        ofile.cd(odir)
 
-                    hn = key.ReadObj()
-                    if projection_rule != "":
-                        hn = project(hn, projection_rule)
+                        hn = key.ReadObj()
+                        if bin_masks is not None:
+                            zero_out(hn, bin_masks)
+                        if projection_rule != "":
+                            hn = project(hn, projection_rule)
 
-                    zero_out(hn)
-                    hn.Write()
+                        zero_out(hn)
+                        hn.Write()
 
-                    add_original_nominal(hn, odir, kname)
-
+                        add_original_nominal(hn, odir, kname)
         ifile.Close()
         ifile = None
 
@@ -221,22 +251,27 @@ def read_category_process_nuisance(ofile, inames, channel, year, cpn, pseudodata
 
             for ss in ["_res", "_pos", "_neg"]:
                 pnt = sig + ss
+                if excludeproc is not None and any([ex in pnt for ex in excludeproc]):
+                    continue
+
                 processes.append((pnt, fname))
 
                 hn = ifile.Get(idir + '/' + pnt)
+                if bin_masks is not None:
+                    zero_out(hn, bin_masks)
                 if projection_rule != "":
                     hn = project(hn, projection_rule)
+
+                if "_neg" in ss:
+                    scale(hn, -1.)
+                else:
+                    zero_out(hn)
 
                 if kfactor and kfactors is not None:
                     if ss == "_res":
                         scale(hn, kfactors[172][0][0])
                     else:
                         scale(hn, kfactors[172][0][1])
-
-                if "_neg" in ss:
-                    scale(hn, -1.)
-                else:
-                    zero_out(hn)
 
                 ofile.cd(odir)
                 hn.Write()
@@ -248,7 +283,7 @@ def read_category_process_nuisance(ofile, inames, channel, year, cpn, pseudodata
             kfactors = None
 
     for pp, ff in processes:
-        if not sigpnt == None:
+        if sigpnt is not None:
             sig = "_".join(pp.split("_")[:-1])
             if kfactor:
                 loratios = {mt: get_lo_ratio(get_point(sig), "ll", mt) if channel in ["ee", "em", "mm", "ll"] else get_lo_ratio(get_point(sig), "lj", mt) for mt in [171, 172, 173]}
@@ -268,9 +303,15 @@ def read_category_process_nuisance(ofile, inames, channel, year, cpn, pseudodata
                 if nn1 in read_category_process_nuisance.specials:
                     nn2 = nn1 if (year in read_category_process_nuisance.specials[nn1][0] or year in nn1) else nn1 + '_' + year
 
-                    # split all A/H QCDscale variations (uX, I/FSR) into uncorrelated NPs for res and int
-                    if "QCDscale_" in nn2 and "_AH" in nn2:
-                        nn2 = nn2 + "_res" if "_res" in pp else nn2 + "_int"
+                    # all A/H QCDscale variations (uX, I/FSR)
+                    if "QCDscale_" in nn2:
+                        # ...split into uncorrelated NPs for res and int
+                        if "_AH" in nn2:
+                            nn2 = nn2 + "_res" if "_res" in pp else nn2 + "_int"
+                        # merged into a common TX NP
+                        if any([tx in nn2 for tx in ["_TQ", "_TW", "_TB"]]):
+                            for tx in ["_TQ", "_TW", "_TB"]:
+                                nn2 = nn2.replace(tx, "_TX")
                 else:
                     nn2 = nn1 if year in nn1 else nn1 + '_' + year
 
@@ -278,15 +319,30 @@ def read_category_process_nuisance(ofile, inames, channel, year, cpn, pseudodata
                     for c1, c2 in read_category_process_nuisance.aliases.items():
                         nn2 = nn2.replace(c2, c1)
 
+                #  FIXME for now only include these NPs for EtaT (as well as norm, below)
+                #if pp == "EtaT" and not any([ne in nn2 for ne in ["bindingEnergy", "tmass"]]):
+                #    continue
+
                 # obtain the actual up/down/chi2 templates
                 hu = key.ReadObj()
                 hd = ifile.Get(idir + '/' + "Down".join(kname.rsplit("Up", 1)))
+                if not (hu and hd):
+                    continue
                 hc = ifile.Get(idir + '/' + "_chi2".join(kname.rsplit("Up", 1))) if keys.Contains("_chi2".join(kname.rsplit("Up", 1))) else None
 
-                # project (ie integrate along some axes) if so requested
+                if bin_masks is not None:
+                    zero_out(hu, bin_masks)
+                    zero_out(hd, bin_masks)
                 if projection_rule != "":
                     hu = project(hu, projection_rule)
                     hd = project(hd, projection_rule)
+
+                if "_neg" in pp and "EWK_TT" not in pp:
+                    scale(hu, -1.)
+                    scale(hd, -1.)
+                else:
+                    zero_out(hu)
+                    zero_out(hd)
 
                 # extra messing around for tmass
                 # also set the keys determining which kfactor to be read
@@ -305,9 +361,6 @@ def read_category_process_nuisance(ofile, inames, channel, year, cpn, pseudodata
                     if "_AH" in nn2:
                         hc = None
                         hah = read_original_nominal(odir, pp)
-                        if "_neg" in pp:
-                            scale(hah, -1.)
-
                         hsm = read_original_nominal(odir, "TT")
 
                         # get the SM shapes
@@ -341,8 +394,8 @@ def read_category_process_nuisance(ofile, inames, channel, year, cpn, pseudodata
                     hu.SetName(nu)
                     hd.SetName(nd)
 
-                    # remove process tag - correlating the NP A/H and SM
-                    nn2 = nn2.replace("_TT", "").replace("_AH", "")
+                    # remove process tag - correlating the tmass NPs
+                    nn2 = nn2.replace("_TT", "").replace("_AH", "").replace("_EtaT", "")
                     mtu = 173
                     mtn = 172
                     mtd = 171
@@ -379,11 +432,11 @@ def read_category_process_nuisance(ofile, inames, channel, year, cpn, pseudodata
                 if not alwaysshape and hc is not None:
                     # the values are smooth chi2 up, down, flat chi2 up, down and flat values up, down
                     chi2s = [hc.GetBinContent(ii) for ii in range(1, 7)]
+                    hn = read_original_nominal(odir, pp)
+                    if sigpnt is not None and kfactor and kfactors is not None:
+                        # remove the nominal k-factor as at this stage they are not yet included
+                        scale(hn, 1. / kfactors[172][0][0] if "_res" in pp else 1. / kfactors[172][0][1])
 
-                    scaleu = 1.
-                    scaled = 1.
-
-                    hn = ifile.Get(idir + '/' + pp)
                     up_norm_rdev = (hu.Integral() - hn.Integral()) / hn.Integral()
                     down_norm_rdev = (hd.Integral() - hn.Integral()) / hn.Integral()
                     two_sided_smooth = up_norm_rdev / down_norm_rdev < 0.
@@ -398,8 +451,8 @@ def read_category_process_nuisance(ofile, inames, channel, year, cpn, pseudodata
                         scaleu = chi2s[4] if keep_value else 0.
                         scaled = chi2s[5] if keep_value else 0.
 
-                        flat_reldev_wrt_nominal(hu, ifile.Get(idir + '/' + pp), scaleu)
-                        flat_reldev_wrt_nominal(hd, ifile.Get(idir + '/' + pp), scaled)
+                        flat_reldev_wrt_nominal(hu, hn, scaleu)
+                        flat_reldev_wrt_nominal(hd, hn, scaled)
 
                         if scaleu == 0. and scaled == 0.:
                             drop_nuisance = True
@@ -407,7 +460,7 @@ def read_category_process_nuisance(ofile, inames, channel, year, cpn, pseudodata
                         if not drop_nuisance:
                             print("make_datacard :: " + str((pp, year, channel)) + " nuisance " + nn2 + " flattened with (up, down) scales of " + str((scaleu, scaled)))
 
-                if not sigpnt == None and kfactor and kfactors is not None:
+                if sigpnt is not None and kfactor and kfactors is not None:
                     # rescale uX varied LO to nominal - as the rate effect is accounted for in the kfactor
                     # also rescale mt variation (normalized to mt = 172 in the ME weights) to its proper LO rate
                     idxu = 1 if "_MEFac_" in nn2 else 3 if "_MERen_" in nn2 else 0
@@ -427,13 +480,6 @@ def read_category_process_nuisance(ofile, inames, channel, year, cpn, pseudodata
 
                 hu.SetName(hu.GetName().replace(nn1, nn2))
                 hd.SetName(hd.GetName().replace(nn1, nn2))
-
-                if "_neg" in pp and "EWK_TT" not in pp:
-                    scale(hu, -1.)
-                    scale(hd, -1.)
-                else:
-                    zero_out(hu)
-                    zero_out(hd)
 
                 if replaces is not None:
                     for rn in replaces:
@@ -458,12 +504,12 @@ def read_category_process_nuisance(ofile, inames, channel, year, cpn, pseudodata
                     prechop_name, prechop_scale = nuisance.pop()
 
                     for chop in chops:
-                        nsci = tokenize_to_list(chop, ';') # nuisance subgroup channel index
+                        nsci = tokenize_to_list(chop, ';') # nuisance subgroup channel_year index
 
                         if nn2 in tokenize_to_list(nsci[0]) and len(nsci) > 1:
                             for ichop in range(1, len(nsci)):
                                 sci = tokenize_to_list(nsci[ichop], '|')
-                                if len(sci) == 3 and channel in tokenize_to_list(sci[1]):
+                                if len(sci) == 3 and odir in update_mask(tokenize_to_list(sci[1])):
                                     nn3 = nn2 + "_" + sci[0]
                                     nuisance.append((nn3, prechop_scale))
 
@@ -502,9 +548,11 @@ def make_pseudodata(ofile, cpn, replaces, injsig = None, assig = None, seed = No
     for category, processes in cpn.items():
         dd = None
         for pp in processes.keys():
-            issig = any([ss in pp for ss in ["_res", "_pos", "_neg"]]) or (assig is not None and any([ss in pp for ss in assig]))
+            # meh let's just hack it
+            isah = any([ss in pp for ss in ["A_m", "H_m"]])
+            issig = isah or (assig is not None and any([ss in pp for ss in assig]))
             hh = ofile.Get(category + '/' + pp).Clone("hhtmphh")
-            if "_neg" in pp:
+            if isah and "_neg" in pp:
                 scale(hh, -1.)
 
             if not issig or (issig and injsig is not None and any([ss in pp for ss in injsig])):
@@ -714,6 +762,36 @@ def write_datacard(oname, cpn, years, sigpnt, injsig, assig, drops, keeps, mcsta
                     rpp = tokenize_to_list(rp, ':')
                     txt.write("\nCMS_{rpp}_norm_13TeV rateParam * {rpp} 1 {rpr}\n".format(rpp = rpp[0], rpr = '[' + rpp[1] + ']' if len(rpp) > 1 else "[0,2]"))
 
+    ewkttbkg = set([pp for pp in cpn[cc] for cc in cpn.keys() if "EWK_TT" in pp and (assig is None or not pp in assig)])
+    if len(ewkttbkg) == 6:
+        for tt in txts:
+            cc = os.path.basename(tt).replace("ahtt_", "").replace(".txt", "")
+            groups[cc]["theory"].append("EWK_yukawa")
+            groups[cc]["norm"].append("EWK_const")
+            with open(tt, 'a') as txt:
+                txt.write("\nEWK_yukawa param 1 -0.12/+0.11")
+                txt.write("\nEWK_yukawa rateParam * EWK_TT_lin_pos 1 [0,5]")
+                txt.write("\nmEWK_yukawa rateParam * EWK_TT_lin_neg (-@0) EWK_yukawa")
+                txt.write("\nEWK_yukawa2 rateParam * EWK_TT_quad_pos (@0*@0) EWK_yukawa")
+                txt.write("\nmEWK_yukawa2 rateParam * EWK_TT_quad_neg (-@0*@0) EWK_yukawa")
+                txt.write("\n")
+                txt.write("\nEWK_const param 1 0.0001")
+                txt.write("\nnuisance edit freeze EWK_const")
+                txt.write("\nEWK_const rateParam * EWK_TT_const_pos 1 [0,2]")
+                txt.write("\nmEWK_const rateParam * EWK_TT_const_neg (-@0) EWK_const")
+                txt.write("\n")
+
+    # note: this is not done using the lnN approach because of the normal +-1 prior
+    etatbkg = any(["EtaT" in cpn[cc] for cc in cpn.keys()])
+    if etatbkg:
+        for tt in txts:
+            cc = os.path.basename(tt).replace("ahtt_", "").replace(".txt", "")
+            groups[cc]["norm"].append("CMS_EtaT_norm_13TeV")
+            with open(tt, 'a') as txt:
+                txt.write("\nCMS_EtaT_norm_13TeV param 1 1")
+                txt.write("\nCMS_EtaT_norm_13TeV rateParam * EtaT 1 [-5,5]")
+                txt.write("\n")
+
     for tt in txts:
         cc = os.path.basename(tt).replace("ahtt_", "").replace(".txt", "")
         with open(tt, 'a') as txt:
@@ -759,9 +837,14 @@ if __name__ == '__main__':
                         type = lambda s: None if s == "" else sorted(tokenize_to_list( remove_spaces_quotes(s) )))
     parser.add_argument("--as-signal", help = combine_help_messages["--as-signal"], dest = "assignal", default = "", required = False,
                         type = lambda s: None if s == "" else sorted(tokenize_to_list( remove_spaces_quotes(s) )))
+    parser.add_argument("--exclude-process", help = combine_help_messages["--exclude-process"], dest = "excludeproc", default = "", required = False,
+                        type = lambda s: None if s == "" else sorted(tokenize_to_list( remove_spaces_quotes(s) )))
+
+    parser.add_argument("--ignore-bin", help = combine_help_messages["--ignore-bin"], dest = "ignorebin", default = "", required = False,
+                        type = lambda s: [] if s == "" else sorted(tokenize_to_list( remove_spaces_quotes(s), ':' )))
 
     parser.add_argument("--projection", help = combine_help_messages["--projection"], default = "", required = False,
-                        type = lambda s: [] if s == "" else tokenize_to_list( remove_spaces_quotes(s) ))
+                        type = lambda s: [] if s == "" else sorted(tokenize_to_list( remove_spaces_quotes(s), ':' )))
 
     parser.add_argument("--chop-up", help = combine_help_messages["--chop-up"], dest = "chop", default = "", required = False,
                         type = lambda s: None if s == "" else sorted(tokenize_to_list( remove_spaces_quotes(s), ':' )))
@@ -783,10 +866,15 @@ if __name__ == '__main__':
         print "supported channels:", allchannels
         raise RuntimeError("unexpected channel is given. aborting.")
 
-    if not all([len(tokenize_to_list(pp, ';')) == 3 for pp in args.projection]):
+    bms_summary = [tokenize_to_list(bb, ';') for bb in args.ignorebin]
+    if not all([len(bb) == 2 for bb in bms_summary]):
+        raise RuntimeError("unexpected bin masking syntax. aborting")
+    bms_idxs = {tuple(tokenize_to_list(bb[0])): index_list(bb[1], 1) for bb in bms_summary}
+
+    prj_summary = [tokenize_to_list(pp, ';') for pp in args.projection]
+    if not all([len(pp) == 3 for pp in prj_summary]):
         raise RuntimeError("unexpected projection instruction syntax. aborting")
-    prjchan = [pp.split(';')[0].split(',') for pp in args.projection]
-    prjrule = [pp.split(';')[1:] for pp in args.projection]
+    prj_rules = {tuple(tokenize_to_list(pp[0])): pp[1:] for pp in prj_summary}
 
     if args.inject is not None:
         args.pseudodata = True
@@ -796,23 +884,32 @@ if __name__ == '__main__':
     cpn = OrderedDict()
     for yy in args.year:
         for cc in args.channel:
-            prule = ""
-            for pchan in prjchan:
-                if cc in pchan:
-                    prule = prjrule[prjchan.index(pchan)]
+            ccyy = cc + '_' + yy
+            bin_masks = None
+            for bc in bms_idxs:
+                if ccyy in update_mask(bc):
+                    bin_masks = bms_idxs[bc]
+                    break
+
+            projection_rule = ""
+            for pc in prj_rules:
+                if ccyy in update_mask(pc):
+                    projection_rule = prj_rules[pc]
+                    break
 
             read_category_process_nuisance(output, args.background, cc, yy, cpn, args.pseudodata,
-                                           args.chop, args.repnom, args.drop, args.keep, args.alwaysshape, args.threshold, args.lnNsmall, prule)
+                                           args.chop, args.repnom, args.drop, args.keep, args.alwaysshape, args.threshold, args.lnNsmall,
+                                           args.excludeproc, bin_masks, projection_rule)
 
             read_category_process_nuisance(output, args.signal, cc, yy, cpn, args.pseudodata,
-                                           args.chop, args.repnom, args.drop, args.keep, args.alwaysshape, args.threshold, args.lnNsmall, prule,
-                                           args.point, args.kfactor)
+                                           args.chop, args.repnom, args.drop, args.keep, args.alwaysshape, args.threshold, args.lnNsmall,
+                                           args.excludeproc, bin_masks, projection_rule, args.point, args.kfactor)
             if args.inject is not None and args.point != args.inject:
                 remaining = list(set(args.inject).difference(args.point))
                 if len(remaining) > 0:
                     read_category_process_nuisance(output, args.signal, cc, yy, cpn, args.pseudodata,
-                                                   args.chop, args.repnom, args.drop, args.keep, args.alwaysshape, args.threshold, args.lnNsmall, prule,
-                                                   remaining, args.kfactor)
+                                                   args.chop, args.repnom, args.drop, args.keep, args.alwaysshape, args.threshold, args.lnNsmall,
+                                                   args.excludeproc, bin_masks, projection_rule, remaining, args.kfactor)
 
     if args.pseudodata:
         print "using ", args.seed, "as seed for pseudodata generation"

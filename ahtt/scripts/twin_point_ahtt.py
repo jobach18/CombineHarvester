@@ -223,22 +223,26 @@ if __name__ == '__main__':
     # parameter ranges for best fit file
     ranges = ["{gg}: 0, 5".format(gg = gg) for gg in ["g1", "g2"]]
     if args.experimental:
-        ranges += ["rgx{EWK_.*}", "rgx{QCDscale_ME.*}", "tmass"] # veeeery wide hedging for theory ME NPs
+        ranges += ["rgx{EWK_.*}", "rgx{QCDscale_ME.*}", "tmass", "CMS_EtaT_norm_13TeV"] # veeeery wide hedging for theory ME NPs
 
     if rundc:
         print "\ntwin_point_ahtt :: making datacard"
         make_datacard_with_args(scriptdir, args)
 
         print "\ntwin_point_ahtt :: making workspaces"
-        syscall("combineTool.py -M T2W -i {dcd} -o workspace_twin-g.root -m {mmm} -P CombineHarvester.CombineTools.MultiInterferencePlusFixed:multiInterferencePlusFixed "
-                "--PO 'signal={pnt}' {pos} {opt} {ext}".format(
-                    dcd = dcdir + "ahtt_combined.txt" if os.path.isfile(dcdir + "ahtt_combined.txt") else dcdir + "ahtt_" + args.channel + '_' + args.year + ".txt",
-                    mmm = mstr,
-                    pnt = ",".join(points),
-                    pos = " ".join(["--PO " + stuff for stuff in ["verbose", "no-r", "yukawa"]]),
-                    opt = "--channel-masks --no-wrappers --X-pack-asympows --optimize-simpdf-constraints=cms --use-histsum",
-                    ext = args.extopt
-        ))
+        for ihsum in [True, False]:
+            syscall("combineTool.py -M T2W -i {dcd} -o workspace_{wst}.root -m {mmm} -P CombineHarvester.CombineTools.MultiInterferencePlusFixed:multiInterferencePlusFixed "
+                    "--PO 'signal={pnt}' {pos} {dyt} {opt} {whs} {ext}".format(
+                        dcd = dcdir + "ahtt_combined.txt" if os.path.isfile(dcdir + "ahtt_combined.txt") else dcdir + "ahtt_" + args.channel + '_' + args.year + ".txt",
+                        wst = "twin-g" if ihsum else "fitdiag",
+                        mmm = mstr,
+                        pnt = ",".join(points),
+                        pos = " ".join(["--PO " + stuff for stuff in ["verbose", "no-r"]]),
+                        dyt = "--PO yukawa" if "EWK_TT" in args.assignal else "",
+                        opt = "--channel-masks --X-pack-asympows --optimize-simpdf-constraints=cms",
+                        whs = "--no-wrappers --use-histsum" if ihsum else "",
+                        ext = args.extopt
+                    ))
 
     if runvalid:
         print "\ntwin_point_ahtt :: validating datacard"
@@ -603,36 +607,52 @@ if __name__ == '__main__':
         directory_to_delete(location = None, flush = True)
 
     if runprepost:
-        for scenario in [(("0.", "0."), True, "--skipSBFit", "b"), (gvalues, args.fixpoi, "--skipBOnlyFit", "s")]:
-            gtofit, fixpoi, fitopt, fittag = scenario
-            gfit = g_in_filename(gtofit)
-            set_freeze = elementwise_add([starting_poi(gtofit, fixpoi), starting_nuisance(args.frzzero, args.frzpost)])
+        fitdiag_workspace = get_best_fit(
+            dcdir, "__".join(points), [args.otag, args.tag],
+            args.defaultwsp, args.keepbest, dcdir + "workspace_fitdiag.root", args.asimov, "fitdiag",
+            "{gvl}{fix}".format(gvl = gstr if gstr != "" else "", fix = "_fixed" if args.fixpoi and gstr != "" else ""),
+            fit_strategy(args.fitstrat if args.fitstrat > -1 else 2, True, args.usehesse), set_range(ranges),
+            elementwise_add([starting_poi(gvalues, args.fixpoi), starting_nuisance(args.frzzero, set())]), args.extopt, masks
+        )
 
-            print "\ntwin_point_ahtt :: making pre- and postfit plots and covariance matrices (" + fittag + ")"
-            syscall("combine -v -1 -M FitDiagnostics {dcd} --saveWithUncertainties --saveNormalizations --saveShapes --saveOverallShapes "
-                    "--plots -m {mmm} -n _prepost {stg} {asm} {prm} {ext} {opt}".format(
-                        dcd = workspace,
-                        mmm = mstr,
-                        stg = fit_strategy(args.fitstrat if args.fitstrat > -1 else 2, True, args.usehesse),
-                        asm = "-t -1" if args.asimov else "",
-                        prm = set_parameter(set_freeze, args.extopt, masks),
-                        ext = nonparametric_option(args.extopt),
-                        opt = fitopt
-                    ))
+        gfit = g_in_filename(gvalues)
+        set_freeze = elementwise_add([starting_poi(gvalues, args.fixpoi), starting_nuisance(args.frzzero, args.frzpost)])
 
-            syscall("rm *_th1x_*.png", False, True)
-            syscall("rm covariance_fit_?.png", False, True)
-            syscall("rm higgsCombine_prepost*.root", False, True)
-            syscall("rm combine_logger.out", False, True)
-            syscall("rm robustHesse_*.root", False, True)
+        print "\ntwin_point_ahtt :: making pre- and postfit plots and covariance matrices"
+        syscall("combine -v -1 -M FitDiagnostics {dcd} --saveWithUncertainties --saveNormalizations --saveShapes --saveOverallShapes "
+                "--plots -m {mmm} -n _prepost {stg} {asm} {prm} {ext}".format(
+                    dcd = fitdiag_workspace,
+                    mmm = mstr,
+                    stg = fit_strategy(args.fitstrat if args.fitstrat > -1 else 2, True, args.usehesse),
+                    asm = "-t -1" if args.asimov else "",
+                    prm = set_parameter(set_freeze, args.extopt, masks),
+                    ext = nonparametric_option(args.extopt)
+                ))
 
-            syscall("mv fitDiagnostics_prepost.root {dcd}{ptg}_fitdiagnostics_{ftg}{gvl}{fix}.root".format(
-                dcd = dcdir,
-                ptg = ptag,
-                ftg = fittag,
-                gvl = "_" + gfit if gfit != "" else "",
-                fix = "_fixed" if fixpoi and gfit != "" else "",
-            ), False)
+        syscall("rm *_th1x_*.png", False, True)
+        syscall("rm covariance_fit_?.png", False, True)
+        syscall("rm higgsCombine_prepost*.root", False, True)
+        syscall("rm combine_logger.out", False, True)
+        syscall("rm robustHesse_*.root", False, True)
+
+        fitdiag_result, fitdiag_shape = ["{dcd}{ptg}_fitdiagnostics_{fdo}{gvl}{fix}.root".format(
+            dcd = dcdir,
+            ptg = ptag,
+            fdo = fdoutput,
+            gvl = "_" + gfit if gfit != "" else "",
+            fix = "_fixed" if args.fixpoi and gfit != "" else "",
+        ) for fdoutput in ["result", "shape"]]
+        syscall("mv fitDiagnostics_prepost.root {fdr}".format(fdr = fitdiag_result), False)
+
+        for ftype in ['s', 'b']:
+            syscall("PostFitShapesFromWorkspace -d {dcd} -w {fdw} -o {fds} --print --postfit --covariance --sampling --skip-proc-errs --total-shapes -f {fdr}:fit_{ftp}".format(
+                dcd = dcdir + "ahtt_combined.txt" if os.path.isfile(dcdir + "ahtt_combined.txt") else dcdir + "ahtt_" + args.channel + '_' + args.year + ".txt",
+                fdw = fitdiag_workspace,
+                fds = fitdiag_shape.replace(".root", '_' + ftype + ".root"),
+                fdr = fitdiag_result,
+                ftp = ftype
+            ))
+            print "\n\n\n"
 
     if runnll:
         if len(args.nllparam) < 1:
@@ -657,6 +677,8 @@ if __name__ == '__main__':
         )
 
         isgah = [param in ["g1", "g2"] for param in args.nllparam]
+        unconstrained = ",".join([param for param, isg in zip(args.nllparam, isgah) if args.nllunconstrained and not isg])
+
         if len(args.nllwindow) < nparam:
             args.nllwindow += ["0,3" if isg else "-5,5" for isg in isgah[len(args.nllwindow):]]
         minmax = [(float(values.split(",")[0]), float(values.split(",")[1])) for values in args.nllwindow]
@@ -666,6 +688,7 @@ if __name__ == '__main__':
             args.nllnpnt += [nsample * round(minmax[ii][1] - minmax[ii][0]) for ii in range(len(args.nllnpnt), nparam)]
             args.nllnpnt += [2 * args.nllnpnt[ii] if isgah[ii] else args.nllnpnt[ii] for ii in range(len(args.nllnpnt), nparam)]
         interval = [list(np.linspace(minmax[ii][0], minmax[ii][1], num = args.nllnpnt[ii if ii < nparam else -1])) for ii in range(nparam)]
+        nllparam = " ".join(["-P {param}".format(param = param) for param in args.nllparam])
 
         nelement = 0
         for element in itertools.product(*interval):
@@ -673,13 +696,14 @@ if __name__ == '__main__':
             nllpnt = ",".join(["{param}={value}".format(param = param, value = value) for param, value in zip(args.nllparam, element)])
             nllname = args.fcexp[0] + "_".join([""] + ["{param}_{value}".format(param = param, value = floattopm(round(value, 5))) for param, value in zip(args.nllparam, element)])
 
-            syscall("combineTool.py -v -1 -M MultiDimFit -d {dcd} -m {mmm} -n _{snm} --algo fixed --fixedPointPOIs '{pnt}' {par} "
+            syscall("combineTool.py -v -1 -M MultiDimFit -d {dcd} -m {mmm} -n _{snm} --algo fixed {par} --fixedPointPOIs '{pnt}' {uco} "
                     "{exp} {stg} {asm} {ext} --saveNLL --X-rtd REMOVE_CONSTANT_ZERO_POINT=1".format(
                         dcd = fcwsp,
                         mmm = mstr,
                         snm = nllname,
                         pnt = nllpnt,
-                        par = "--redefineSignalPOIs '{param}'".format(param = ",".join(args.nllparam)),
+                        par = nllparam,
+                        uco = "--redefineSignalPOIs '{uco}'".format(uco = unconstrained) if len(unconstrained) else "",
                         exp = set_parameter(set_freeze, args.extopt, masks),
                         stg = fit_strategy(args.fitstrat if args.fitstrat > -1 else 1, True, args.usehesse),
                         asm = "-t -1" if args.fcexp[0] != "obs" else "",

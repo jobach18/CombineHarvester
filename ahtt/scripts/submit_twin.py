@@ -19,7 +19,7 @@ from utilslab import input_base, input_bkg, input_sig, remove_mjf
 from utilscombine import problematic_datacard_log, min_g, max_g
 from utilshtc import submit_job, aggregate_submit, flush_jobs
 
-from desalinator import prepend_if_not_empty, tokenize_to_list, remove_spaces_quotes
+from desalinator import prepend_if_not_empty, tokenize_to_list, remove_quotes, remove_spaces_quotes, clamp_with_quote
 from argumentative import common_common, common_fit_pure, common_fit_forwarded, make_datacard_pure, make_datacard_forwarded, common_2D
 from argumentative import common_submit, parse_args
 from hilfemir import combine_help_messages, submit_help_messages
@@ -60,7 +60,10 @@ def generate_g_grid(pair, ggrids = "", gmode = "", propersig = False, ndivision 
                         ntoy = (contour["g-grid"][gv]["total"],) if gmode == "brim" else (0,)
                         gt = tuplize(gv)
                         if not any([gt == (ggt[0], ggt[1]) for ggt in g_grid]):
-                            g_grid.append(gt + ntoy)
+                            npass = contour["g-grid"][gv]["pass"]
+                            cuts = [npass > (25. / alpha) for alpha in generate_g_grid.alphas]
+                            if not any(cuts):
+                                g_grid.append(gt + ntoy)
 
             if gmode == "refine":
                 mintoy = sys.maxsize
@@ -68,9 +71,9 @@ def generate_g_grid(pair, ggrids = "", gmode = "", propersig = False, ndivision 
                     mintoy = min(mintoy, contour["g-grid"][gv]["total"] if contour["g-grid"][gv] is not None else sys.maxsize)
 
                 cuts = [mintoy > (9. / alpha) for alpha in generate_g_grid.alphas]
-                if sum([1 if cut else 0 for cut in cuts]) < 2:
+                if sum([1 if cut else 0 for cut in cuts]) < 1:
                     print "minimum toy count: " + str(mintoy)
-                    raise RuntimeError("minimum toys insufficient to determine 2 sigma contour!! likely unintended, recheck!!")
+                    raise RuntimeError("minimum toys insufficient to determine 1 sigma contour!! likely unintended, recheck!!")
 
                 gts = [tuplize(gv) for gv in contour["g-grid"].keys() if contour["g-grid"][gv] is not None]
                 effs = [float(contour["g-grid"][gv]["pass"]) / float(contour["g-grid"][gv]["total"]) for gv in contour["g-grid"].keys() if contour["g-grid"][gv] is not None]
@@ -257,45 +260,47 @@ if __name__ == '__main__':
         valid_g = any(float(gg) >= 0. for gg in args.gvalues)
 
         job_name = "twin_point_" + pstr + args.otag + "_" + "_".join(tokenize_to_list( remove_spaces_quotes(mode) ))
-        job_arg = ("--point {pnt} --mode {mmm} {sus} {inj} {ass} {tag} {drp} {kee} {sig} {bkg} {cha} {yyy} {thr} {lns} {shp} {mcs} {rpr} {msk} {prj} "
+        job_arg = ("--point {pnt} --mode {mmm} {sus} {inj} {ass} {exc} {tag} {drp} {kee} {sig} {bkg} {cha} {yyy} {thr} {lns} {shp} {mcs} {rpr} {msk} {igb} {prj} "
                    "{cho} {rep} {fst} {hes} {kbf} {dws} {fr0} {frp} {asm} {rsd} {com} {dbg} {rmr} {igp} {gvl} {fix} {ext} {otg} {exp} {bsd}").format(
             pnt = pair,
             mmm = mode if not "clean" in mode else ','.join([mm for mm in mode.replace(" ", "").split(",") if "clean" not in mm]),
             sus = "--sushi-kfactor" if args.kfactor else "",
-            inj = "--inject-signal " + args.inject if args.inject != "" else "",
-            ass = "--as-signal " + args.assignal if args.assignal != "" else "",
-            tag = "--tag " + args.tag if args.tag != "" else "",
-            drp = "--drop '" + args.drop + "'" if args.drop != "" else "",
-            kee = "--keep '" + args.keep + "'" if args.keep != "" else "",
+            inj = clamp_with_quote(string = args.inject, prefix = '--inject-signal '),
+            ass = clamp_with_quote(string = args.assignal, prefix = '--as-signal '),
+            exc = clamp_with_quote(string = args.excludeproc, prefix = '--exclude-process '),
+            tag = clamp_with_quote(string = args.tag, prefix = '--tag '),
+            drp = clamp_with_quote(string = args.drop, prefix = '--drop '),
+            kee = clamp_with_quote(string = args.keep, prefix = '--keep '),
             sig = "--signal " + input_sig(args.signal, pair, args.inject, args.channel, args.year) if rundc else "",
             bkg = "--background " + input_bkg(args.background, args.channel) if rundc else "",
             cha = "--channel " + args.channel,
             yyy = "--year " + args.year,
-            thr = "--threshold " + args.threshold if args.threshold != "" else "",
+            thr = clamp_with_quote(string = args.threshold, prefix = '--threshold '),
             lns = "--lnN-under-threshold" if args.lnNsmall else "",
             shp = "--use-shape-always" if args.alwaysshape else "",
             mcs = "--no-mc-stats" if not args.mcstat else "",
-            rpr = "--float-rate '" + args.rateparam + "'" if args.rateparam != "" else "",
-            msk = "--mask '" + args.mask + "'" if args.mask != "" else "",
-            prj = "--projection '" + args.projection + "'" if rundc and args.projection != "" else "",
-            cho = "--chop-up '" + args.chop + "'" if args.chop != "" else "",
-            rep = "--replace-nominal '" + args.repnom + "'" if args.repnom != "" else "",
+            rpr = clamp_with_quote(string = args.rateparam, prefix = '--float-rate '),
+            msk = clamp_with_quote(string = args.mask, prefix = '--mask '),
+            igb = clamp_with_quote(string = args.ignorebin, prefix = '--ignore-bin '),
+            prj = clamp_with_quote(string = args.projection, prefix = '--projection '),
+            cho = clamp_with_quote(string = args.chop, prefix = '--chop-up '),
+            rep = clamp_with_quote(string = args.repnom, prefix = '--replace-nominal '),
             fst = "--fit-strategy {fst}".format(fst = args.fitstrat) if args.fitstrat > -1 else "",
             hes = "--use-hesse" if args.usehesse else "",
             kbf = "--redo-best-fit" if not args.keepbest else "",
             dws = "--default-workspace" if args.defaultwsp else "",
-            fr0 = "--freeze-zero '" + args.frzzero + "'" if args.frzzero != "" else "",
-            frp = "--freeze-post '" + args.frzpost + "'" if args.frzpost != "" else "",
+            fr0 = clamp_with_quote(string = args.frzzero, prefix = '--freeze-zero '),
+            frp = clamp_with_quote(string = args.frzpost, prefix = '--freeze-post '),
+            rsd = clamp_with_quote(string = args.seed, prefix = '--seed '),
             asm = "--unblind" if not args.asimov else "",
-            rsd = "--seed " + args.seed if args.seed != "" else "",
             com = "--compress" if rundc else "",
             dbg = "--experimental" if args.experimental else "",
             rmr = "--delete-root" if args.rmroot else "",
             igp = "--ignore-previous" if args.ignoreprev else "",
             gvl = "--g-values{s}'".format(s = '=' if args.gvalues[0][0] == "-" else " ") + ','.join(args.gvalues) + "'" if valid_g and not runfc else "",
             fix = "--fix-poi" if valid_g and args.fixpoi else "",
-            ext = "--extra-option{s}'".format(s = '=' if args.extopt[0] == "-" else " ") + args.extopt + "'" if args.extopt != "" else "",
-            otg = "--output-tag " + args.otag if args.otag != "" else "",
+            ext = clamp_with_quote(string = args.extopt, prefix = '--extra-option{s}'.format(s = '=' if args.extopt.startswith('-') else ' ')),
+            otg = clamp_with_quote(string = args.otag, prefix = '--output-tag '),
             exp = "--{fn}-expect{s}'".format(
                 fn = "fc" if runfc or runcompile else "nll",
                 s = '=' if args.fcexp[0][0] == "-" else " "
@@ -448,10 +453,11 @@ if __name__ == '__main__':
                     continue
 
             jarg = job_arg
-            jarg += " {par} {win} {pnt}".format(
-                par = "--nll-parameter '" + ",".join(args.nllparam) + "'",
-                win = "--nll-interval='" + ";".join(args.nllwindow) + "'" if args.nllwindow != [] else "",
-                pnt = "--nll-npoint '" + ",".join([str(npnt) for npnt in args.nllnpnt]) + "'" if args.nllnpnt != [] else "",
+            jarg += " {par} {win} {pnt} {uco}".format(
+                par = clamp_with_quote(string = ",".join(args.nllparam), prefix = '--nll-parameter '),
+                win = clamp_with_quote(string = ";".join(args.nllwindow), prefix = '--nll-interval='),
+                pnt = clamp_with_quote(string = ",".join([str(npnt) for npnt in args.nllnpnt]), prefix = '--nll-npoint '),
+                uco = "--nll-unconstrained" if args.nllunconstrained else "",
             )
 
             submit_job(agg, jname, jarg, args.jobtime, 1, "",

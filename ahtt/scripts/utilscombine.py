@@ -4,7 +4,7 @@
 import glob
 import os
 
-from desalinator import remove_quotes, remove_spaces, tokenize_to_list
+from desalinator import remove_quotes, remove_spaces, tokenize_to_list, clamp_with_quote
 from utilspy import syscall, right_now
 
 from ROOT import TFile, gDirectory, TH1, TH1D
@@ -94,18 +94,20 @@ def get_best_fit(dcdir, point, tags, usedefault, useexisting, default, asimov, m
     if usedefault:
         return default
     elif useexisting:
-        workspace = glob.glob("{dcd}{ptg}_best-fit_{asm}*.root".format(
+        workspace = glob.glob("{dcd}{ptg}_best-fit_{asm}*{mod}.root".format(
             dcd = dcdir,
             ptg = ptag(point, tags[0]),
-            asm = "exp" if asimov else "obs"
+            asm = "exp" if asimov else "obs",
+            mod = "_" + modifier if modifier != "" else "",
         ))
 
         if len(workspace) == 0 or not os.path.isfile(workspace[0]):
             # try again, but using tag instead of otag
-            workspace = glob.glob("{dcd}{ptg}_best-fit_{asm}*.root".format(
+            workspace = glob.glob("{dcd}{ptg}_best-fit_{asm}*{mod}.root".format(
                 dcd = dcdir,
                 ptg = ptag(point, tags[1]),
-                asm = "exp" if asimov else "obs"
+                asm = "exp" if asimov else "obs",
+                mod = "_" + modifier if modifier != "" else "",
             ))
 
         if len(workspace) and os.path.isfile(workspace[0]):
@@ -120,11 +122,12 @@ def get_best_fit(dcdir, point, tags, usedefault, useexisting, default, asimov, m
             workspace = make_best_fit(dcdir, default, point, asm, strategy, ranges, set_freeze, extopt, masks)
             syscall("rm robustHesse_*.root", False, True)
 
-            newname = "{dcd}{ptg}_best-fit_{asm}{sce}.root".format(
+            newname = "{dcd}{ptg}_best-fit_{asm}{sce}{mod}.root".format(
                 dcd = dcdir,
                 ptg = ptag(point, tags[0]),
                 asm = "exp" if asm else "obs",
                 sce = "_" + scenario if scenario != "" else "",
+                mod = "_" + modifier if modifier != "" else "",
             )
             syscall("mv {wsp} {nwn}".format(wsp = workspace, nwn = newname), False)
             workspace = newname
@@ -183,7 +186,7 @@ def fit_strategy(strat, robust = False, use_hesse = False, tolerance_level = 0):
 
 def make_datacard_with_args(scriptdir, args):
     syscall("{scr}/make_datacard.py --signal {sig} --background {bkg} --point {pnt} --channel {ch} --year {yr} "
-            "{psd} {inj} {ass} {tag} {drp} {kee} {kfc} {thr} {lns} {shp} {mcs} {rpr} {prj} {cho} {rep} {rsd}".format(
+            "{psd} {inj} {ass} {exc} {tag} {drp} {kee} {kfc} {thr} {lns} {shp} {mcs} {rpr} {igb} {prj} {cho} {rep} {rsd}".format(
                 scr = scriptdir,
                 pnt = ','.join(args.point),
                 sig = args.signal,
@@ -191,28 +194,33 @@ def make_datacard_with_args(scriptdir, args):
                 ch = args.channel,
                 yr = args.year,
                 psd = "--add-pseudodata" if args.asimov else "",
-                inj = "--inject-signal " + args.inject if args.inject != "" else "",
-                ass = "--as-signal " + args.assignal if args.assignal != "" else "",
-                tag = "--tag " + args.tag if args.tag != "" else "",
-                drp = "--drop '" + args.drop + "'" if args.drop != "" else "",
-                kee = "--keep '" + args.keep + "'" if args.keep != "" else "",
+                inj = clamp_with_quote(string = args.inject, prefix = '--inject-signal '),
+                ass = clamp_with_quote(string = args.assignal, prefix = '--as-signal '),
+                exc = clamp_with_quote(string = args.excludeproc, prefix = '--exclude-process '),
+                tag = clamp_with_quote(string = args.tag, prefix = '--tag '),
+                drp = clamp_with_quote(string = args.drop, prefix = '--drop '),
+                kee = clamp_with_quote(string = args.keep, prefix = '--keep '),
                 kfc = "--sushi-kfactor" if args.kfactor else "",
-                thr = "--threshold " + args.threshold if args.threshold != "" else "",
+                thr = clamp_with_quote(string = args.threshold, prefix = '--threshold '),
                 lns = "--lnN-under-threshold" if args.lnNsmall else "",
                 shp = "--use-shape-always" if args.alwaysshape else "",
                 mcs = "--no-mc-stats" if not args.mcstat else "",
-                rpr = "--float-rate '" + args.rateparam + "'" if args.rateparam != "" else "",
-                prj = "--projection '" + args.projection + "'" if args.projection != "" else "",
-                cho = "--chop-up '" + args.chop + "'" if args.chop != "" else "",
-                rep = "--replace-nominal '" + args.repnom + "'" if args.repnom != "" else "",
-                rsd = "--seed " + args.seed if args.seed != "" else ""
+                rpr = clamp_with_quote(string = args.rateparam, prefix = '--float-rate '),
+                msk = clamp_with_quote(string = ','.join(args.mask), prefix = '--mask '),
+                igb = clamp_with_quote(string = args.ignorebin, prefix = '--ignore-bin '),
+                prj = clamp_with_quote(string = args.projection, prefix = '--projection '),
+                cho = clamp_with_quote(string = args.chop, prefix = '--chop-up '),
+                rep = clamp_with_quote(string = args.repnom, prefix = '--replace-nominal '),
+                rsd = clamp_with_quote(string = args.seed, prefix = '--seed '),
             ))
 
 def update_mask(masks):
     new_masks = []
     for mask in masks:
         channel, year = mask.split("_")
-        if channel == "ll":
+        if channel == "lx":
+            channels = ["ee", "em", "mm", "e3j", "e4pj", "m3j", "m4pj"]
+        elif channel == "ll":
             channels = ["ee", "em", "mm"]
         elif channel == "sf":
             channels = ["ee", "mm"]
