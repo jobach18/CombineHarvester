@@ -9,6 +9,25 @@ import uproot
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
+import tarfile
+
+
+def extract_and_list_folders_in_archives(archive_file_paths):
+    folder_lists = []
+    for archive_path in [archive_file_paths]:
+        if not os.path.isfile(archive_path):
+            print(f"File not found: {archive_path}")
+            raise TypeError('file not found, is already unzipped')
+            continue
+
+        extraction_dir = os.path.dirname(archive_path)
+        print(f'the extraction dir is {extraction_dir}')
+        with tarfile.open(archive_path, "r") as archive:
+            archive.extractall(path=extraction_dir)
+            folder_list = [os.path.join(extraction_dir, member.name) for member in archive.getmembers() if member.isdir()]
+
+
+    return folder_list[0]
 
 
 def extract_info_from_foldername(folder_name):
@@ -91,6 +110,11 @@ def main():
             final_folder = os.path.join(root_folder, folder)
         # Check if the subfolder exist)s
         print(f'the final folder is {final_folder}')
+        try:
+            final_folder = extract_and_list_folders_in_archives(final_folder)
+            print(f'the extracted final folder is {final_folder}')
+        except:
+            print(f'already extracted')
         if os.path.exists(final_folder) and os.path.isdir(final_folder):
                 # Find the .root file in the subfolder
                 expectation = args.Expectation 
