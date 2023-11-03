@@ -10,18 +10,23 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 import tarfile
+import logging
+logging.basicConfig(
+   level=logging.DEBUG,  # Set the log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+   format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+   )
 
 
 def extract_and_list_folders_in_archives(archive_file_paths):
     folder_lists = []
     for archive_path in [archive_file_paths]:
         if not os.path.isfile(archive_path):
-            print(f"File not found: {archive_path}")
+            logging.info(f"File not found: {archive_path}")
             raise TypeError('file not found, is already unzipped')
             continue
 
         extraction_dir = os.path.dirname(archive_path)
-        print(f'the extraction dir is {extraction_dir}')
+        logging.info(f'the extraction dir is {extraction_dir}')
         with tarfile.open(archive_path, "r") as archive:
             archive.extractall(path=extraction_dir)
             folder_list = [os.path.join(extraction_dir, member.name) for member in archive.getmembers() if member.isdir()]
@@ -75,7 +80,7 @@ def main():
         if os.path.isdir(subfolder_path) and re.match(pattern, subfolder):
             matching_folders.extend([os.path.join(subfolder_path, folder) for folder in os.listdir(subfolder_path) if folder.startswith("A")][:])
 
-    print(matching_folders)
+    #logging.info(matching_folders)
 
     #calculate the folders for this job
     if int(args.JobSize) != 1:
@@ -87,7 +92,7 @@ def main():
     else:
         fold_of_job = matching_folders
 
-    print(f'there are {len(fold_of_job)} files in this job')
+    logging.info(f'there are {len(fold_of_job)} files in this job')
 
     # Iterate over the matching folders
     for folder in tqdm(fold_of_job):
@@ -102,19 +107,20 @@ def main():
                         else:
                             break
                 except NotADirectoryError:
-                    print('failed')
+                    logging.info('failed')
                     fail_ind += 1
                     continue
                 final_folder = os.path.join(subfolder_path, fc_results_folder)
         elif args.Mode == "nll":
             final_folder = os.path.join(root_folder, folder)
         # Check if the subfolder exist)s
-        print(f'the final folder is {final_folder}')
+        logging.info(f'the final folder is {final_folder}')
         try:
             final_folder = extract_and_list_folders_in_archives(final_folder)
-            print(f'the extracted final folder is {final_folder}')
+            #logging.info(f'the extracted final folder is {final_folder}')
         except:
-            print(f'already extracted')
+            logging.warning(f'already extracted')
+        logging.info(f'the extracted final folder we go on with is {final_folder}')
         if os.path.exists(final_folder) and os.path.isdir(final_folder):
                 # Find the .root file in the subfolder
                 expectation = args.Expectation 
@@ -123,30 +129,34 @@ def main():
                 elif args.Mode == "contour":
                      root_file = next((file for file in os.listdir(final_folder) if file.endswith(expectation+".root")), None)
         # Check if a .root file was found
+        logging.info(f'the root file is: {root_file}')
         if root_file is not None:
             # Open the .root file and read data from the "limits" branch into a pandas dataframe
             root_file_path = os.path.join(final_folder, root_file)
-            print(f' opening file: {root_file_path}')
+            logging.info(f'opening file: {root_file_path}')
             with uproot.open(root_file_path) as file:
                 tree = file["limit"]
                 quantE = tree["quantileExpected"].array(library="pd")
+                logging.info('the quantile expected tree is {quantE}')
                 # Get the list of branch names
                 branch_names = tree.keys()
-                print(f' the branch names are: {branch_names}')
+                logging.info(f' the branch names are: {branch_names}')
                 branch_names_rel = [string for string in branch_names if not string.startswith("prop")]
-                print(f' the relevant branch names are: {branch_names_rel}')
+                logging.info(f' the relevant branch names are: {branch_names_rel}')
                 # Create an empty dictionary to store data
                 data_dict = {branch_name: tree[branch_name].array(library="pd")[quantE!=-1] for branch_name in branch_names_rel}
 
                 # Convert the dictionary to a Pandas DataFrame
                 m1_value, m2_value, w1_value, w2_value = extract_info_from_foldername(folder)
+                logging.info(f'the values for the masses and widths are {m1_value}, {m2_value}, {w1_value} and {w2_value}') 
                 data_dict["m1"] = np.zeros_like(tree['nll'].array(library="pd")[quantE!=-1]) + m1_value
                 data_dict["m2"] = np.zeros_like(tree['nll'].array(library="pd")[quantE!=-1]) + m2_value
                 data_dict["w1"] = np.zeros_like(tree['nll'].array(library="pd")[quantE!=-1]) + w1_value
                 data_dict["w2"] = np.zeros_like(tree['nll'].array(library="pd")[quantE!=-1]) + w2_value
                 df = pd.DataFrame(data_dict)
-    print(f' this job successfully processed {i} folder')
-    print(f' {fail_ind} folders were tar.gz files')
+                logging.info(f' the resulting dataframe has a length of {len(df)}')
+    logging.info(f' this job successfully processed {i} folder')
+    logging.info(f' {fail_ind} folders were tar.gz files')
     df.to_hdf('train_data_NP_'+expectation+"_"+args.JobId+'.h5', key='data', mode='w')
 if __name__=="__main__":
     main()
