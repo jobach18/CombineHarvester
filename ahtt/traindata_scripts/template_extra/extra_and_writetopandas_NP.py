@@ -115,11 +115,11 @@ def main():
             final_folder = os.path.join(root_folder, folder)
         # Check if the subfolder exist)s
         logging.info(f'the final folder is {final_folder}')
-        try:
-            final_folder = extract_and_list_folders_in_archives(final_folder)
-            #logging.info(f'the extracted final folder is {final_folder}')
-        except:
-            logging.warning(f'already extracted')
+        #try:
+        #    final_folder = extract_and_list_folders_in_archives(final_folder)
+        #    #logging.info(f'the extracted final folder is {final_folder}')
+        #except:
+        #    logging.warning(f'already extracted')
         logging.info(f'the extracted final folder we go on with is {final_folder}')
         if os.path.exists(final_folder) and os.path.isdir(final_folder):
                 # Find the .root file in the subfolder

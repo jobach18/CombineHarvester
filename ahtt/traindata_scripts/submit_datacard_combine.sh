@@ -14,7 +14,7 @@ masses='m400,m800'
 widths='w2p5,w5p0'
 pairs="${masses};${widths};${masses};${widths}"
 #N_JOB=400
-TAG="validation_w2p5X"
+TAG="validation_w2p5_g_1_to_1p5"
 
 mkdir ./../data/${TAG}
 mkdir ./../data/${TAG}/condor
