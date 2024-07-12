@@ -25,6 +25,7 @@ def make_submission_script_header():
 
     elif cluster == "lxplus":
         script += 'environment = "cmssw_base={cmssw} JOB_PROC_ID=$INT(Job_Proc_ID)"\n'.format(cmssw = os.getenv('CMSSW_BASE'))
+        script += '+MySingularityImage = "/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cat/cmssw-lxplus/cmssw-el7-lxplus:latest"'
 
         # Afiq's Special Treatment
         if os.getlogin() == 'afiqaize':
