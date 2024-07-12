@@ -36,9 +36,9 @@ def read_previous_grid(points, prev_best_fit, gname, epsilon = 2.**-4):
     if result["points"] == points and all([abs(now - prev) < epsilon for now, prev in zip(result["best_fit_g1_g2_dnll"], list(prev_best_fit))]):
         return result["g-grid"]
     else:
-        print "\ninconsistent previous grid, ignoring the previous grid..."
-        print "previous: ", points, prev_best_fit
-        print "current: ", result["points"], result["best_fit_g1_g2_dnll"]
+        print("\ninconsistent previous grid, ignoring the previous grid...")
+        print("previous: ", points, prev_best_fit)
+        print("current: ", result["points"], result["best_fit_g1_g2_dnll"])
         sys.stdout.flush()
 
     return OrderedDict()
@@ -100,7 +100,7 @@ def sum_up(g1, g2):
 
     gs = OrderedDict()
     if g1["dnll"] != g2["dnll"]:
-        print '\nWARNING :: incompatible expected/data dnll, when they should be!! Using the first dnll: ', g1["dnll"], ', over the second: ', g2["dnll"]
+        print('\nWARNING :: incompatible expected/data dnll, when they should be!! Using the first dnll: ', g1["dnll"], ', over the second: ', g2["dnll"])
         sys.stdout.flush()
 
     gs["total"] = g1["total"] + g2["total"]
@@ -132,7 +132,7 @@ def hadd_files(dcdir, point_tag, fileexp, direxp):
     files = recursive_glob(dcdir, "{ptg}_*_{src}".format(ptg = point_tag, src = fsrc))
 
     if len(files) > 0:
-        print "\ntwin_point_ahtt :: source files with expression '{src}' detected, merging them...".format(src = fsrc)
+        print("\ntwin_point_ahtt :: source files with expression '{src}' detected, merging them...".format(src = fsrc))
         files = set([os.path.basename(re.sub(fsrc.replace('*', '.*'), fmrg, ff)) for ff in files])
 
         mrgdir = ""
@@ -186,11 +186,11 @@ def is_ah_res_only(datacard):
     return all([point + part not in processes for point in points for part in ["_pos", "_neg"]])
 
 if __name__ == '__main__':
-    print "twin_point_ahtt :: called with the following arguments"
-    print sys.argv[1:]
-    print "\n"
-    print " ".join(sys.argv)
-    print "\n"
+    print("twin_point_ahtt :: called with the following arguments")
+    print(sys.argv[1:])
+    print("\n")
+    print(" ".join(sys.argv))
+    print("\n")
     sys.stdout.flush()
 
     parser = ArgumentParser()
@@ -219,7 +219,7 @@ if __name__ == '__main__':
 
     mstr = str(get_point(points[0])[1]).replace(".0", "")
     masks = ["mask_" + mm + "=1" for mm in args.mask]
-    print "the following channel x year combinations will be masked:", args.mask
+    print("the following channel x year combinations will be masked:", args.mask)
 
     allmodes = ["datacard", "workspace", "validate",
                 "best", "best-fit", "single",
@@ -228,7 +228,7 @@ if __name__ == '__main__':
                 "prepost", "corrmat", "psfromws",
                 "nll", "likelihood"]
     if (not all([mm in allmodes for mm in modes])):
-        print "supported modes:", allmodes
+        print("supported modes:", allmodes)
         raise RuntimeError("unxpected mode is given. aborting.")
 
     # determine what to do with workspace, and do it
@@ -246,7 +246,7 @@ if __name__ == '__main__':
     runnll = "nll" in modes or "likelihood" in modes
 
     if len(args.fcexp) > 0 and not all([expected_scenario(exp) is not None for exp in args.fcexp]):
-        print "given expected scenarii:", args.fcexp
+        print("given expected scenarii:", args.fcexp)
         raise RuntimeError("unexpected expected scenario is given. aborting.")
 
     runbest = runsingle or runbest or rundc
@@ -259,14 +259,14 @@ if __name__ == '__main__':
         raise RuntimeError("in toy generation or FC scans no g can be negative!!")
 
     if rundc:
-        print "\ntwin_point_ahtt :: making datacard"
+        print("\ntwin_point_ahtt :: making datacard")
         make_datacard_with_args(scriptdir, args)
         ahresonly = is_ah_res_only(
             dcdir + "ahtt_combined.txt" if os.path.isfile(dcdir + "ahtt_combined.txt") else
             dcdir + "ahtt_" + args.channel + '_' + args.year + ".txt"
         )
 
-        print "\ntwin_point_ahtt :: making workspaces"
+        print("\ntwin_point_ahtt :: making workspaces")
         for ihsum in [True, False]:
             if ahresonly:
                 modelopt = "-P HiggsAnalysis.CombinedLimit.PhysicsModel:multiSignalModel "
@@ -293,7 +293,7 @@ if __name__ == '__main__':
             ))
 
     if runvalid:
-        print "\ntwin_point_ahtt :: validating datacard"
+        print("\ntwin_point_ahtt :: validating datacard")
         syscall("ValidateDatacards.py --jsonFile {dcd}{ptg}_validate.json --printLevel 3 {dcd}{crd}".format(
             dcd = dcdir,
             ptg = ptag,
@@ -335,7 +335,7 @@ if __name__ == '__main__':
             args.toyloc = dcdir
 
     if rungen and args.ntoy > 0:
-        print "\ntwin_point_ahtt :: starting toy generation"
+        print("\ntwin_point_ahtt :: starting toy generation")
         syscall("combine -v 0 -M GenerateOnly -d {dcd} -m {mmm} -n _{snm} --setParameters '{par}' {stg} {toy}".format(
                     dcd = workspace,
                     mmm = mstr,
@@ -365,7 +365,7 @@ if __name__ == '__main__':
                     break
 
             if ftoy < args.ntoy:
-                print "\nWARNING :: file", args.toyloc, "contains less toys than requested in the run!"
+                print("\nWARNING :: file", args.toyloc, "contains less toys than requested in the run!")
 
     if rungof:
         if args.asimov:
@@ -378,7 +378,7 @@ if __name__ == '__main__':
         set_freeze = elementwise_add([starting_poi(gvalues, args.fixpoi), starting_nuisance(args.frzzero, args.frzpost)])
 
         if args.gofrundat:
-            print "\ntwin_point_ahtt :: starting goodness of fit, saturated model - data fit"
+            print("\ntwin_point_ahtt :: starting goodness of fit, saturated model - data fit")
             scan_name = "gof-saturated_obs"
 
             never_gonna_give_you_up(
@@ -414,7 +414,7 @@ if __name__ == '__main__':
             ), False)
 
         if args.ntoy > 0:
-            print "\ntwin_point_ahtt :: starting goodness of fit, saturated model - toy fits"
+            print("\ntwin_point_ahtt :: starting goodness of fit, saturated model - toy fits")
             scan_name = "gof-saturated_toys"
             scan_name += "_" + str(args.runidx) if args.runidx > -1 else ""
 
@@ -458,7 +458,7 @@ if __name__ == '__main__':
         scan_name = "pnt_g1_" + gvalues[0] + "_g2_" + gvalues[1]
 
         if args.fcrundat:
-            print "\ntwin_point_ahtt :: finding the best fit point for FC scan"
+            print("\ntwin_point_ahtt :: finding the best fit point for FC scan")
 
             for fcexp in args.fcexp:
                 scenario = expected_scenario(fcexp, resonly = ahresonly)
@@ -516,7 +516,7 @@ if __name__ == '__main__':
 
         if args.ntoy > 0:
             identifier = "_toys_" + str(args.runidx) if args.runidx > -1 else "_toys"
-            print "\ntwin_point_ahtt :: performing the FC scan for toys"
+            print("\ntwin_point_ahtt :: performing the FC scan for toys")
 
             setpar, frzpar = ([], [])
             syscall("combineTool.py -v 0 -M MultiDimFit -d {dcd} -m {mmm} -n _{snm} --algo fixed --fixedPointPOIs '{par}' "
@@ -565,13 +565,13 @@ if __name__ == '__main__':
         toys = recursive_glob(dcdir, "{ptg}_fc-scan_*_toys.root".format(ptg = ptag))
         idxs = recursive_glob(dcdir, "{ptg}_fc-scan_*_toys_*.root".format(ptg = ptag))
         if len(toys) == 0 or len(idxs) > 0:
-            print "\ntwin_point_ahtt :: either no merged toy files are present, or some indexed ones are."
+            print("\ntwin_point_ahtt :: either no merged toy files are present, or some indexed ones are.")
             raise RuntimeError("run either the fc-scan or hadd modes first before proceeding!")
 
-        print "\ntwin_point_ahtt :: compiling FC scan results..."
+        print("\ntwin_point_ahtt :: compiling FC scan results...")
         for fcexp in args.fcexp:
             scenario = expected_scenario(fcexp, resonly = ahresonly)
-            print "\ntwin_point_ahtt :: compiling scenario {sc}...".format(sc = scenario)
+            print("\ntwin_point_ahtt :: compiling scenario {sc}...".format(sc = scenario))
             sys.stdout.flush()
 
             expfits = recursive_glob(dcdir, "{ptg}_fc-scan_*_{exp}.root".format(ptg = ptag, exp = scenario[0]))
@@ -620,10 +620,10 @@ if __name__ == '__main__':
                         raise RuntimeError("failed getting the expected fit for point " + gv + " from file or grid. aborting.")
 
                 if current_fit is not None and best_fit != current_fit:
-                    print '\nWARNING :: incompatible best fit across different g values!! ignoring current, assuming it is due to numerical instability!'
-                    print 'this should NOT happen too frequently within a single compilation, and the difference should not be large!!'
-                    print "current result ", ename, ": ", current_fit
-                    print "first result ", best_fit
+                    print('\nWARNING :: incompatible best fit across different g values!! ignoring current, assuming it is due to numerical instability!')
+                    print('this should NOT happen too frequently within a single compilation, and the difference should not be large!!')
+                    print("current result ", ename, ": ", current_fit)
+                    print("first result ", best_fit)
                     sys.stdout.flush()
 
                 tname = recursive_glob(dcdir, os.path.basename(ename).replace("{exp}.root".format(exp = scenario[0]), "toys.root"))
@@ -677,7 +677,7 @@ if __name__ == '__main__':
         ) for fdoutput in ["result", "shape"]]
 
     if runprepost:
-        print "\ntwin_point_ahtt :: making pre- and postfit plots and covariance matrices"
+        print("\ntwin_point_ahtt :: making pre- and postfit plots and covariance matrices")
         if args.prepostfit == 's':
             startpoi = starting_poi(gvalues, args.fixpoi)
         else:
@@ -720,7 +720,7 @@ if __name__ == '__main__':
         assert os.path.isfile(dcdir + "ahtt_combined.txt"), "this mode makes no sense with just one channel!"
         assert os.path.isfile(fitdiag_result), "file {fdr} missing! mode prepost must be ran before this one!".format(fdr = fitdiag_result)
 
-        print "\ntwin_point_ahtt :: making channel block workspace"
+        print("\ntwin_point_ahtt :: making channel block workspace")
         nicemerge = len(args.prepostmerge) == 1
         ppmtxt, ppmwsp = "ahtt_prepostmerge.txt", "workspace_prepostmerge.root"
 
@@ -746,7 +746,7 @@ if __name__ == '__main__':
         syscall("rm {inf}".format(inf = " ".join(inputfiles[1:])), False, True)
         inputfiles = [inputfiles[0], ppmtxt, ppmwsp]
 
-        print "\ntwin_point_ahtt :: merging postfit plots as per fit result"
+        print("\ntwin_point_ahtt :: merging postfit plots as per fit result")
         syscall("PostFitShapesFromWorkspace -d {dcd} -w {fdw} -o {fds} --print --postfit --covariance --sampling --skip-prefit --skip-proc-errs --total-shapes -f {fdr}:fit_{ftp}".format(
             dcd = ppmtxt,
             fdw = ppmwsp,
@@ -766,7 +766,7 @@ if __name__ == '__main__':
         if len(args.fcexp) != 1:
             raise RuntimeError("in mode nll only one expected scenario is allowed.")
 
-        print "\ntwin_point_ahtt :: evaluating nll as a function of {nlp}".format(nlp = ", ".join(args.nllparam))
+        print("\ntwin_point_ahtt :: evaluating nll as a function of {nlp}".format(nlp = ", ".join(args.nllparam)))
 
         nparam = len(args.nllparam)
         scenario = expected_scenario(args.fcexp[0], gvalues_syntax = True, resonly = ahresonly)
