@@ -1,0 +1,91 @@
+CMSSW directory: /nfs/dust/cms/user/bachjoer/fc-scan/DKW_ineq/CMSSW_10_2_13
+/cvmfs/grid.desy.de/etc/profile.d/scripts/glite-ui-env.sh: line 41: lsb_release: command not found
+No Grid environment available for this OS.
+Adding DESY site environment.
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = (unset),
+	LC_ALL = (unset),
+	LC_PAPER = "de_DE.UTF-8",
+	LC_ADDRESS = "de_DE.UTF-8",
+	LC_MONETARY = "de_DE.UTF-8",
+	LC_NUMERIC = "de_DE.UTF-8",
+	LC_TELEPHONE = "de_DE.UTF-8",
+	LC_IDENTIFICATION = "de_DE.UTF-8",
+	LC_MEASUREMENT = "de_DE.UTF-8",
+	LC_TIME = "de_DE.UTF-8",
+	LC_NAME = "de_DE.UTF-8",
+	LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+Job execution starts at Mon Jan 6 13:24:43 CET 2025 on host naf-cms11.desy.de
+
+twin_point_ahtt :: called with the following arguments
+['--point', 'A_m1000_w5p0,H_m500_w2p0', '--mode', 'single', '--g-values', '0.0,0.0', '--fix-poi', '--exclude-process', 'ChiT', '--tag', '_lx_etat', '--channel', 'ee,em,mm,e3j,e4pj,m3j,m4pj', '--year', '2016pre,2016post,2017,2018', '--seed', '-1', '--poi-set', 'CMS_EtaT_norm_13TeV', '--unblind', '--output-tag', '_lx_etat', '--base-directory', '/nfs/dust/cms/user/bachjoer/fc-scan/DKW_ineq/CMSSW_10_2_13/src/CombineHarvester/ahtt/scripts']
+
+
+/nfs/dust/cms/user/bachjoer/fc-scan/DKW_ineq/CMSSW_10_2_13/src/CombineHarvester/ahtt/scripts/twin_point_ahtt.py --point A_m1000_w5p0,H_m500_w2p0 --mode single --g-values 0.0,0.0 --fix-poi --exclude-process ChiT --tag _lx_etat --channel ee,em,mm,e3j,e4pj,m3j,m4pj --year 2016pre,2016post,2017,2018 --seed -1 --poi-set CMS_EtaT_norm_13TeV --unblind --output-tag _lx_etat --base-directory /nfs/dust/cms/user/bachjoer/fc-scan/DKW_ineq/CMSSW_10_2_13/src/CombineHarvester/ahtt/scripts
+
+
+the following channel x year combinations will be masked: []
+
+xxx_point_ahtt :: making best fits
+Executing: set -o pipefail && combineTool.py -v 0 -M MultiDimFit -d /nfs/dust/cms/user/bachjoer/fc-scan/DKW_ineq/CMSSW_10_2_13/src/CombineHarvester/ahtt/scripts/A_m1000_w5p0__H_m500_w2p0_lx_etat/workspace_twin-g.root -n _A_m1000_w5p0__H_m500_w2p0_best_fit_2025-01-06_13-24-55-863613 --X-rtd OPTIMIZE_BOUNDS=0 --X-rtd MINIMIZER_MaxCalls=9999999 --X-rtd FAST_VERTICAL_MORPH --X-rtd CACHINGPDF_NOCLONE --cminPreScan --cminDefaultMinimizerAlgo Combined --cminDefaultMinimizerStrategy 0 --cminDefaultMinimizerTolerance 0.0625 --cminFallbackAlgo Minuit2,Migrad,0:0.0625 --cminFallbackAlgo Minuit2,Simplex,0:0.0625 --cminFallbackAlgo GSLMultiMin,BFGS2,0:0.0625 --robustFit 1 --setRobustFitAlgo Minuit2 --maxFailedSteps 9999999 --setRobustFitStrategy 0 --setRobustFitTolerance 0.0625 --stepSize 0.0625 --setCrossingTolerance 0.000244140625  --setParameterRanges 'g1=0,5:g2=0,5' -t -1 --redefineSignalPOIs 'CMS_EtaT_norm_13TeV' --saveWorkspace --saveSpecifiedNuis=all --saveNLL --setParameters 'g1=0.0,g2=0.0' --freezeParameters 'g1,g2'   --algo singles --cl=0.68
+ <<< Combine >>> 
+>>> random number generator seed is 123456
+Configured fallback algorithm , type Minuit2, algo Migrad, strategy 0, tolerance 0.0625
+Configured fallback algorithm , type Minuit2, algo Simplex, strategy 0, tolerance 0.0625
+Configured fallback algorithm , type GSLMultiMin, algo BFGS2, strategy 0, tolerance 0.0625
+   Options for Robust Minimizer :: 
+        Tolerance  0.0625
+        Strategy   0
+        Type,Algo  Minuit2
+>>> method used is MultiDimFit
+ModelConfig 'ModelConfig' defines more than one parameter of interest. This is not supported in some statistical methods.
+Set Range of Parameter g1 To : (0,5)
+Set Range of Parameter g2 To : (0,5)
+Set Default Value of Parameter g1 To : 0
+Set Default Value of Parameter g2 To : 0
+>>> 0 out of 28 channels masked
+
+SimNLL created with 28 channels, 1 generic constraints, 4083 fast gaussian constraints, 0 fast poisson constraints, 0 fast group constraints, 
+
+ --- MultiDimFit ---
+best fit parameter values and profile-likelihood uncertainties: 
+   CMS_EtaT_norm_13TeV :    +0.000   -0.125/+0.125 (68%)
+Done in 6.55 min (cpu), 6.58 min (real)
+>> combine -v 0 --X-rtd OPTIMIZE_BOUNDS=0 --X-rtd MINIMIZER_MaxCalls=9999999 --X-rtd FAST_VERTICAL_MORPH --X-rtd CACHINGPDF_NOCLONE --cminPreScan --cminDefaultMinimizerAlgo Combined --cminDefaultMinimizerStrategy 0 --cminDefaultMinimizerTolerance 0.0625 --cminFallbackAlgo Minuit2,Migrad,0:0.0625 --cminFallbackAlgo Minuit2,Simplex,0:0.0625 --cminFallbackAlgo GSLMultiMin,BFGS2,0:0.0625 --robustFit 1 --setRobustFitAlgo Minuit2 --maxFailedSteps 9999999 --setRobustFitStrategy 0 --setRobustFitTolerance 0.0625 --stepSize 0.0625 --setCrossingTolerance 0.000244140625 -t -1 --redefineSignalPOIs CMS_EtaT_norm_13TeV --saveWorkspace --saveSpecifiedNuis=all --saveNLL --setParameters g1=0.0,g2=0.0 --freezeParameters g1,g2 --algo singles --cl=0.68 -M MultiDimFit -d /nfs/dust/cms/user/bachjoer/fc-scan/DKW_ineq/CMSSW_10_2_13/src/CombineHarvester/ahtt/scripts/A_m1000_w5p0__H_m500_w2p0_lx_etat/workspace_twin-g.root --setParameterRanges g1=0,5:g2=0,5 -n _A_m1000_w5p0__H_m500_w2p0_best_fit_2025-01-06_13-24-55-863613
+rm: cannot remove 'robustHesse_*.root': No such file or directory
+Executing: set -o pipefail && combineTool.py -v 0 -M MultiDimFit -d /nfs/dust/cms/user/bachjoer/fc-scan/DKW_ineq/CMSSW_10_2_13/src/CombineHarvester/ahtt/scripts/A_m1000_w5p0__H_m500_w2p0_lx_etat/workspace_twin-g.root -n _A_m1000_w5p0__H_m500_w2p0_best_fit_2025-01-06_13-31-59-931485 --X-rtd OPTIMIZE_BOUNDS=0 --X-rtd MINIMIZER_MaxCalls=9999999 --X-rtd FAST_VERTICAL_MORPH --X-rtd CACHINGPDF_NOCLONE --cminPreScan --cminDefaultMinimizerAlgo Combined --cminDefaultMinimizerStrategy 0 --cminDefaultMinimizerTolerance 0.0625 --cminFallbackAlgo Minuit2,Migrad,0:0.0625 --cminFallbackAlgo Minuit2,Simplex,0:0.0625 --cminFallbackAlgo GSLMultiMin,BFGS2,0:0.0625 --robustFit 1 --setRobustFitAlgo Minuit2 --maxFailedSteps 9999999 --setRobustFitStrategy 0 --setRobustFitTolerance 0.0625 --stepSize 0.0625 --setCrossingTolerance 0.000244140625  --setParameterRanges 'g1=0,5:g2=0,5'  --redefineSignalPOIs 'CMS_EtaT_norm_13TeV' --saveWorkspace --saveSpecifiedNuis=all --saveNLL --setParameters 'g1=0.0,g2=0.0' --freezeParameters 'g1,g2'   --algo singles --cl=0.68
+ <<< Combine >>> 
+>>> random number generator seed is 123456
+Configured fallback algorithm , type Minuit2, algo Migrad, strategy 0, tolerance 0.0625
+Configured fallback algorithm , type Minuit2, algo Simplex, strategy 0, tolerance 0.0625
+Configured fallback algorithm , type GSLMultiMin, algo BFGS2, strategy 0, tolerance 0.0625
+   Options for Robust Minimizer :: 
+        Tolerance  0.0625
+        Strategy   0
+        Type,Algo  Minuit2
+>>> method used is MultiDimFit
+ModelConfig 'ModelConfig' defines more than one parameter of interest. This is not supported in some statistical methods.
+Set Range of Parameter g1 To : (0,5)
+Set Range of Parameter g2 To : (0,5)
+Set Default Value of Parameter g1 To : 0
+Set Default Value of Parameter g2 To : 0
+>>> 0 out of 28 channels masked
+
+SimNLL created with 28 channels, 1 generic constraints, 4083 fast gaussian constraints, 0 fast poisson constraints, 0 fast group constraints, 
+
+ --- MultiDimFit ---
+best fit parameter values and profile-likelihood uncertainties: 
+   CMS_EtaT_norm_13TeV :    +1.225   -0.128/+0.130 (68%)
+Done in 7.72 min (cpu), 7.76 min (real)
+>> combine -v 0 --X-rtd OPTIMIZE_BOUNDS=0 --X-rtd MINIMIZER_MaxCalls=9999999 --X-rtd FAST_VERTICAL_MORPH --X-rtd CACHINGPDF_NOCLONE --cminPreScan --cminDefaultMinimizerAlgo Combined --cminDefaultMinimizerStrategy 0 --cminDefaultMinimizerTolerance 0.0625 --cminFallbackAlgo Minuit2,Migrad,0:0.0625 --cminFallbackAlgo Minuit2,Simplex,0:0.0625 --cminFallbackAlgo GSLMultiMin,BFGS2,0:0.0625 --robustFit 1 --setRobustFitAlgo Minuit2 --maxFailedSteps 9999999 --setRobustFitStrategy 0 --setRobustFitTolerance 0.0625 --stepSize 0.0625 --setCrossingTolerance 0.000244140625 --redefineSignalPOIs CMS_EtaT_norm_13TeV --saveWorkspace --saveSpecifiedNuis=all --saveNLL --setParameters g1=0.0,g2=0.0 --freezeParameters g1,g2 --algo singles --cl=0.68 -M MultiDimFit -d /nfs/dust/cms/user/bachjoer/fc-scan/DKW_ineq/CMSSW_10_2_13/src/CombineHarvester/ahtt/scripts/A_m1000_w5p0__H_m500_w2p0_lx_etat/workspace_twin-g.root --setParameterRanges g1=0,5:g2=0,5 -n _A_m1000_w5p0__H_m500_w2p0_best_fit_2025-01-06_13-31-59-931485
+rm: cannot remove 'robustHesse_*.root': No such file or directory
+
+xxx_point_ahtt :: the dNLL of the best fit point wrt the model zero point (0, ...) is (-5616.219745571683,)
+WARNING :: the model zero point is based on the 'nll0' branch, which includes the values of ALL NPs, not only POIs!!
+WARNING :: this means no NP profiling is done, so do NOT use this value directly for compatibility tests!!
+
+
+Job execution ends at Mon Jan 6 13:39:59 CET 2025

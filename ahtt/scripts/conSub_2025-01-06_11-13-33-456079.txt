@@ -1,0 +1,18 @@
+Job_Proc_ID = $(Process) + 1 
+executable = /nfs/dust/cms/user/bachjoer/fc-scan/DKW_ineq/CMSSW_10_2_13/src/CombineHarvester/ahtt/scripts/condorRun.sh
+notification = error
+universe = vanilla
+getenv = true
+environment = "CMSSW_DIR=/nfs/dust/cms/user/bachjoer/fc-scan/DKW_ineq/CMSSW_10_2_13 JOB_PROC_ID=$INT(Job_Proc_ID)"
++MySingularityImage = "/cvmfs/unpacked.cern.ch/registry.hub.docker.com/cmssw/el7:x86_64"
+
+
+batch_name = twin_point_A_m1000_w5p0__H_m500_w2p0_lx_etat_datacard_validate
+arguments = "/nfs/dust/cms/user/bachjoer/fc-scan/DKW_ineq/CMSSW_10_2_13/src/CombineHarvester/ahtt/scripts/twin_point_ahtt.py --point A_m1000_w5p0,H_m500_w2p0 --mode datacard,validate --signal /nfs/dust/cms/group/exotica-desy/HeavyHiggs/templates_ULFR2/breaktype3_mtAH_230314/ll/sig_ll_3D-33_m500.root,/nfs/dust/cms/group/exotica-desy/HeavyHiggs/templates_ULFR2/breaktype3_mtAH_230314/lj/templates_lj_sig_m500.root,/nfs/dust/cms/group/exotica-desy/HeavyHiggs/templates_ULFR2/breaktype3_mtAH_230314/ll/sig_ll_3D-33_m1000.root,/nfs/dust/cms/group/exotica-desy/HeavyHiggs/templates_ULFR2/breaktype3_mtAH_230314/lj/templates_lj_sig_m1000.root --sushi-kfactor --exclude-process ""ChiT"" --tag ""_lx_etat"" --drop ""Type3,FlavorQCD_201,eff_b_13TeV_201,TT_norm,EWK_yukawa,bindingEnergy"" --keep ""eff_b,eff_e,eff_m_id,eff_m_iso,eff_trigger,fake,JEC,JER,MET,QCDscale,hdamp,tmass,EWK_scheme,alphaS,PDF_PCA_0,L1,EWQCD,pileup,lumi,norm,UEtune,CR_ERD,CR_QCD"" --background /nfs/dust/cms/group/exotica-desy/HeavyHiggs/templates_ULFR2/etat_chit_w2p8_241204/bkg_templates_3D-33_rate_mtuX.root,/nfs/dust/cms/group/exotica-desy/HeavyHiggs/templates_ULFR2/dyscales_fix_231020/lj/templates_lj_bkg_rate_mtuX_pca_ewk.root --channel ee,em,mm,e3j,e4pj,m3j,m4pj --year 2016pre,2016post,2017,2018 --lnN-under-threshold --seed ""-1"" --unblind --compress --output-tag ""_lx_etat"""
+output = /nfs/dust/cms/user/bachjoer/fc-scan/DKW_ineq/CMSSW_10_2_13/src/CombineHarvester/ahtt/scripts/twin_point_A_m1000_w5p0__H_m500_w2p0_lx_etat_datacard_validate.o$(Cluster).$INT(Job_Proc_ID)
+error = /nfs/dust/cms/user/bachjoer/fc-scan/DKW_ineq/CMSSW_10_2_13/src/CombineHarvester/ahtt/scripts/twin_point_A_m1000_w5p0__H_m500_w2p0_lx_etat_datacard_validate.o$(Cluster).$INT(Job_Proc_ID)
++RequestRuntime = 10800
+should_transfer_files = YES
+when_to_transfer_output = ON_EXIT_OR_EVICT
+queue
+

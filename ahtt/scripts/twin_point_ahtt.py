@@ -25,6 +25,17 @@ from desalinator import prepend_if_not_empty, tokenize_to_list, remove_spaces_qu
 from argumentative import common_point, common_common, common_fit_pure, common_fit, make_datacard_pure, make_datacard_forwarded, common_2D, parse_args
 from hilfemir import combine_help_messages
 
+def zero_p_toys(toyfolder):
+	file_path = glob.glob(os.path.join(toyfolder, "*.root"))[0]
+    #read the 0,0 toys into an array
+	with uproot.open(file_path) as root_file:
+		tree = root_file["limit"]
+		data = tree["deltaNLL"].array(library="np")
+	return data
+
+def cdf_epsilon(N, alpha):
+    return np.sqrt(np.log(2/alpha)/(2*N))
+
 def read_previous_best_fit(gname):
     with open(gname) as ff:
         result = json.load(ff, object_pairs_hook = OrderedDict)
@@ -89,6 +100,43 @@ def get_toys(toy_name, best_fit, keep_reduced = False, strict_preservation = Fal
     pval["dnll"] = best_fit[2]
     pval["total"] = isum
     pval["pass"] = ipas
+    pval['mode'] = 'FC'
+    pval['sigmas'] = 0
+    return pval
+
+
+def get_toys_dkw(toy_name, best_fit, dkw_bounds):
+    '''
+    in:
+        toy_name:   position of 0,0 toys
+        best_fit:   fit of the current grid point
+        dkw_bounds: array of DKw corrected bounds of dnll values for 1,2, ... sigma
+    get the modified version of the fc output for the case with dkw inequality.
+    toy_name is the 0,0 shared toys, we collect the passing toys for 0,0 point that was shifted by given cdf_sigma  
+    We also report as "sigmas" the 1 and 2 sigma pass boolean as 0,1
+    '''
+    if not os.path.isfile(toy_name):
+        return None
+    pval = OrderedDict()
+    vfile = TFile.Open(vname)
+    vtree = vfile.Get("limit")
+
+    isum = 0
+    ipas = 0
+    for i in vtree:
+        isum += 1
+        ipas += 1 if vtree.deltaNLL > best_fit[2] else 0
+    vfile.Close()
+
+    sigmas = np.zeros_like(dkw_bounds)
+    for i, dkw_bound in enumerate(dkw_bounds):
+        sigmas[i] = 1 if best_fit[2] > dkw_bound else 0
+
+    pval["dnll"] = best_fit[2]
+    pval["total"] = isum
+    pval["pass"] = ipas
+    pval['mode'] = 'DKW'
+    pval['sigmas'] = sigmas
     return pval
 
 def sum_up(g1, g2):
@@ -827,6 +875,42 @@ if __name__ == '__main__':
             grid["best_fit_g1_g2_dnll"] = best_fit
             grid["g-grid"] = OrderedDict() if idx == 0 or args.ignoreprev else read_previous_grid(points, best_fit, previous_grids[-1])
 
+            if args.dkw:
+                ### load the 0,0 toy distribution 
+                if not args.zerotoyloc:
+                    raise RuntimeError('please specify location of the 0,0 toys when using --dkw! 
+                            - Use --zerotoylocation')
+                zero_p_toys = load_z_toys(args.zerotoyloc)
+				counts, bin_edges = np.histogram(zero_p_toys, bins=10000, density=True)
+				# Compute the CDF
+				cdf = np.cumsum(counts) * np.diff(bin_edges)
+                x_sigma_band_cdf = cdf_epsilon(len(zero_p_toys), args.cdf_sigma)
+                cdf_at_confidence = cdf - x_sigma_band_cdf
+                one_sig_dkw = bin_edges[1:][(cdf_at_confidence)>0.68][0]
+                two_sig_dkw = bin_edges[1:][(cdf_at_confidence)>0.95][0]
+                if args.do_cdf_sanity:
+                    plt.plot(bin_edges[1:], cdf, label="CDF")
+					plt.plot(bin_edges[1:], cdf_at_confidence, label="CDF at confidence {} sigma".format(args.cdf_sigma))
+
+					one_sig_cdf = bin_edges[1:][(cdf)>0.68][0]
+					two_sig_cdf = bin_edges[1:][(cdf)>0.95][0]
+					plt.axvline(x=one_sig_cdf, color='g', linestyle='-', label=f'1 sigma bound for cdf')
+					plt.axvline(x=one_sig_dkw, color='g', linestyle='-', label=f'1 sigma bound for cdf with {} sigma confidence'.format(args.cdf_sigma))
+					plt.axvline(x=two_sig_cdf, color='g', linestyle='-', label=f'2 sigma bound for cdf')
+					plt.axvline(x=two_sig_dkw, color='g', linestyle='-', label=f'2 sigma bound for cdf with {} sigma confidence'.format(args.cdf_sigma))
+
+					counts, bin_edges = np.histogram(zero_p_toys, bins=100, density=True)
+					plt.bar(bin_edges[1:], counts/np.sum(counts), label='dNLL', alpha=0.3, width=np.diff(bin_edges))
+					plt.xlabel("deltaNLL")
+					plt.ylabel("CDF")
+					plt.legend(loc='lower right', prop={'size': 4})
+					plt.savefig('{ptg}_dkw_sanitycheck_pnt_g1_{g1}_g2_{g2}_{exp}.pdf'.format(
+                    ptg = ptag,
+                    g1 = pnt[0],
+                    g2 = pnt[1],
+                    exp = scenario[0]
+                )
+
             for pnt in gpoints:
                 gv = stringify(pnt)
                 ename = recursive_glob(dcdir, "{ptg}_fc-scan_pnt_g1_{g1}_g2_{g2}_{exp}.root".format(
@@ -860,7 +944,12 @@ if __name__ == '__main__':
                 tname = recursive_glob(dcdir, os.path.basename(ename).replace("{exp}.root".format(exp = scenario[0]), "toys.root"))
                 tname = tname[0] if len(tname) else ""
 
-                gg = get_toys(toy_name = tname, best_fit = expected_fit, keep_reduced = args.collecttoy and fcexp == args.fcexp[-1])
+                if args.dkw:
+                    print('using the DKW equality to do contour estimation')
+                    gg = get_toys_dkw(toy_name = args.zero_p_toys, best_fit = expected_fit, keep_reduced = args.collecttoy and fcexp == args.fcexp[-1], [one_sig_dkw, two_sig_dkw])
+
+                else:
+                    gg = get_toys(toy_name = tname, best_fit = expected_fit, keep_reduced = args.collecttoy and fcexp == args.fcexp[-1])
                 if gg is not None and args.rmroot:
                     directory_to_delete(location = ename)
                     syscall("rm " + ename, False, True)
