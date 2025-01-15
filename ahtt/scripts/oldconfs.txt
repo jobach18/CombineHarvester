@@ -1,0 +1,26 @@
+
+pairs='m500;w2p0;m365;w2p0' # first m/w is A, second is H. also see skype, maybe it isnt the pair i write here
+pairs='m500;w5p0;m500;w2p0'
+pairs='m500;w5p0;m1000;w2p0' #6
+pairs='m500;w10p0;m365;w2p0' #6
+pairs='m365;w2p0;m365;w5p0' 
+pairs='m365;w2p0;m500;w2p0' 
+pairs='m365;w2p0;m750;w5p0' 
+pairs='m365;w2p0;m1000;w2p0' 
+pairs='m365;w5p0;m365;w5p0' 
+pairs='m365;w5p0;m1000;w2p0' 
+pairs='m500;w2p0;m500;w2p0' 
+pairs='m500;w5p0;m750;w2p0' 
+pairs='m500;w2p0;m1000;w2p0' 
+pairs='m500;w2p0;m1000;w5p0' 
+pairs='m500;w5p0;m365;w2p0' 
+pairs='m500;w5p0;m365;w5p0' 
+pairs='m365;w5p0;m500;w10p0' 
+pairs='m365;w5p0;m750;w2p0' 
+pairs='m365;w5p0;m1000;w5p0' 
+pairs='m500;w2p0;m365;w5p0' 
+pairs='m1000;w2p0;m500;w2p0' 
+pairs='m750;w2p0;m500;w5p0' 
+pairs='m1000;w2p0;m365;w2p0' 
+pairs='m750;w2p0;m365;w5p0' 
+pairs='m1000;w5p0;m500;w2p0' 

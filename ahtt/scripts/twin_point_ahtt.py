@@ -8,6 +8,7 @@ import glob
 import re
 import numpy as np
 import itertools
+import matplotlib.pyplot
 
 from collections import OrderedDict
 import json
@@ -105,7 +106,17 @@ def get_toys(toy_name, best_fit, keep_reduced = False, strict_preservation = Fal
     return pval
 
 
-def get_toys_dkw(toy_name, best_fit, dkw_bounds):
+def correct_dnll_val(dnll, best_fit):
+    counts, bin_edges = np.histogram(dnll_array, bins=10000, density=True)
+    cdf = np.cumsum(counts) * np.diff(bin_edges) 
+    best_fit_index = np.digitize(best_fit, bin_edges) - 1
+    best_fit_cdf = cdf[best_fit_index]
+    best_fit_index_corrected = bin_edges[1:][(cdf-cdf_epsilon(len(dnll),args.cdf_sigma))>best_fit_cdf][0]
+    return best_fit_index_corrected
+
+
+
+def get_toys_dkw(toy_folder, best_fit, dkw_bounds, dnll_array):
     '''
     in:
         toy_name:   position of 0,0 toys
@@ -115,6 +126,7 @@ def get_toys_dkw(toy_name, best_fit, dkw_bounds):
     toy_name is the 0,0 shared toys, we collect the passing toys for 0,0 point that was shifted by given cdf_sigma  
     We also report as "sigmas" the 1 and 2 sigma pass boolean as 0,1
     '''
+    toy_name = glob.glob(os.path.join(toy_folder, "*.root"))[0]
     if not os.path.isfile(toy_name):
         return None
     pval = OrderedDict()
@@ -123,9 +135,11 @@ def get_toys_dkw(toy_name, best_fit, dkw_bounds):
 
     isum = 0
     ipas = 0
+	#correct the best_fit by the given DKW security
+    best_fit_corrected = correct_dnll_val(dnll_array, best_fit[2])
     for i in vtree:
         isum += 1
-        ipas += 1 if vtree.deltaNLL > best_fit[2] else 0
+        ipas += 1 if vtree.deltaNLL > best_fit_corrected else 0
     vfile.Close()
 
     sigmas = np.zeros_like(dkw_bounds)
@@ -845,7 +859,10 @@ if __name__ == '__main__':
         idxs = recursive_glob(dcdir, "{ptg}_fc-scan_*_toys_*.root".format(ptg = ptag))
         if len(toys) == 0 or len(idxs) > 0:
             print "\ntwin_point_ahtt :: either no merged toy files are present, or some indexed ones are."
-            raise RuntimeError("run either the fc-scan or hadd modes first before proceeding!")
+            if args.dkw:
+                print('using dkw mode')
+            else:
+                raise RuntimeError("run either the fc-scan or hadd modes first before proceeding!")
 
         print "\ntwin_point_ahtt :: compiling FC scan results..."
         for fcexp in args.fcexp:
@@ -878,38 +895,37 @@ if __name__ == '__main__':
             if args.dkw:
                 ### load the 0,0 toy distribution 
                 if not args.zerotoyloc:
-                    raise RuntimeError('please specify location of the 0,0 toys when using --dkw! 
-                            - Use --zerotoylocation')
-                zero_p_toys = load_z_toys(args.zerotoyloc)
-				counts, bin_edges = np.histogram(zero_p_toys, bins=10000, density=True)
-				# Compute the CDF
-				cdf = np.cumsum(counts) * np.diff(bin_edges)
+                    raise RuntimeError('please specify location of the 0,0 toys when using --dkw! - Use --zerotoylocation')
+                zero_p_toys = zero_p_toys(args.zerotoyloc)
+                counts, bin_edges = np.histogram(zero_p_toys, bins=10000, density=True)
+                # Compute the CDF
+                cdf = np.cumsum(counts) * np.diff(bin_edges)
                 x_sigma_band_cdf = cdf_epsilon(len(zero_p_toys), args.cdf_sigma)
                 cdf_at_confidence = cdf - x_sigma_band_cdf
                 one_sig_dkw = bin_edges[1:][(cdf_at_confidence)>0.68][0]
                 two_sig_dkw = bin_edges[1:][(cdf_at_confidence)>0.95][0]
                 if args.do_cdf_sanity:
                     plt.plot(bin_edges[1:], cdf, label="CDF")
-					plt.plot(bin_edges[1:], cdf_at_confidence, label="CDF at confidence {} sigma".format(args.cdf_sigma))
+                    plt.plot(bin_edges[1:], cdf_at_confidence, label="CDF at confidence {} sigma".format(args.cdf_sigma))
 
-					one_sig_cdf = bin_edges[1:][(cdf)>0.68][0]
-					two_sig_cdf = bin_edges[1:][(cdf)>0.95][0]
-					plt.axvline(x=one_sig_cdf, color='g', linestyle='-', label=f'1 sigma bound for cdf')
-					plt.axvline(x=one_sig_dkw, color='g', linestyle='-', label=f'1 sigma bound for cdf with {} sigma confidence'.format(args.cdf_sigma))
-					plt.axvline(x=two_sig_cdf, color='g', linestyle='-', label=f'2 sigma bound for cdf')
-					plt.axvline(x=two_sig_dkw, color='g', linestyle='-', label=f'2 sigma bound for cdf with {} sigma confidence'.format(args.cdf_sigma))
+                    one_sig_cdf = bin_edges[1:][(cdf)>0.68][0]
+                    two_sig_cdf = bin_edges[1:][(cdf)>0.95][0]
+                    plt.axvline(x=one_sig_cdf, color='g', linestyle='-', label='1 sigma bound for cdf')
+                    plt.axvline(x=one_sig_dkw, color='g', linestyle='-', label='1 sigma bound for cdf with {} sigma confidence'.format(args.cdf_sigma))
+                    plt.axvline(x=two_sig_cdf, color='g', linestyle='-', label='2 sigma bound for cdf')
+                    plt.axvline(x=two_sig_dkw, color='g', linestyle='-', label='2 sigma bound for cdf with {} sigma confidence'.format(args.cdf_sigma))
 
-					counts, bin_edges = np.histogram(zero_p_toys, bins=100, density=True)
-					plt.bar(bin_edges[1:], counts/np.sum(counts), label='dNLL', alpha=0.3, width=np.diff(bin_edges))
-					plt.xlabel("deltaNLL")
-					plt.ylabel("CDF")
-					plt.legend(loc='lower right', prop={'size': 4})
-					plt.savefig('{ptg}_dkw_sanitycheck_pnt_g1_{g1}_g2_{g2}_{exp}.pdf'.format(
+                    counts, bin_edges = np.histogram(zero_p_toys, bins=100, density=True)
+                    plt.bar(bin_edges[1:], counts/np.sum(counts), label='dNLL', alpha=0.3, width=np.diff(bin_edges))
+                    plt.xlabel("deltaNLL")
+                    plt.ylabel("CDF")
+                    plt.legend(loc='lower right', prop={'size': 4})
+                    plt.savefig('{ptg}_dkw_sanitycheck_pnt_g1_{g1}_g2_{g2}_{exp}.pdf'.format(
                     ptg = ptag,
                     g1 = pnt[0],
                     g2 = pnt[1],
                     exp = scenario[0]
-                )
+                ))
 
             for pnt in gpoints:
                 gv = stringify(pnt)
@@ -946,7 +962,7 @@ if __name__ == '__main__':
 
                 if args.dkw:
                     print('using the DKW equality to do contour estimation')
-                    gg = get_toys_dkw(toy_name = args.zero_p_toys, best_fit = expected_fit, keep_reduced = args.collecttoy and fcexp == args.fcexp[-1], [one_sig_dkw, two_sig_dkw])
+                    gg = get_toys_dkw(toy_name = args.zero_p_toys, best_fit = expected_fit, dkw_bounds = [one_sig_dkw, two_sig_dkw], dnll_array = zero_p_toys)
 
                 else:
                     gg = get_toys(toy_name = tname, best_fit = expected_fit, keep_reduced = args.collecttoy and fcexp == args.fcexp[-1])
