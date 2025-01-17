@@ -48,6 +48,7 @@ def read_contour(cfiles):
     return contours
 
 def draw_contour(onames, pair, cfiles, labels, maxsigma, propersig, drawcontour, bestfit, scatter, formal, cmsapp, luminosity, a343bkg, transparent):
+    print('Drawing Contour')
     contours = read_contour(cfiles)
     ncontour = len(contours)
     alphas = [0.6827, 0.9545, 0.9973, 0.999937, 0.9999997] if propersig else [0.68, 0.95, 0.9973, 0.999937, 0.9999997]
@@ -242,6 +243,7 @@ if __name__ == '__main__':
 
         pairs = [','.join(pairs[0])]
 
+    print('plotting the pairs {}'.format(pairs))
     for pair in pairs:
         pair = pair.split(',')
         pstr = "__".join(pair)

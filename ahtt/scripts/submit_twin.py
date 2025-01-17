@@ -351,7 +351,7 @@ if __name__ == '__main__':
             gvl = "_" + g_in_filename(args.gvalues) if g_in_filename(args.gvalues) != "" else "",
             fix = "_fixed" if args.fixpoi and g_in_filename(args.gvalues) != "" else ""
         )
-        job_arg = "--point {pnt} --mode {mmm} {sig} {rmr} {clt} {igp} {gvl} {fix} {exp}".format(
+        job_arg = "--point {pnt} --mode {mmm} {sig} {rmr} {clt} {igp} {gvl} {fix} {exp} {dkw} {dkwpos} {cdfsig} {cdfsan}".format(
             pnt = pair,
             mmm = mode if not "clean" in mode else ','.join([mm for mm in mode.replace(" ", "").split(",") if "clean" not in mm]),
             sig = "--signal " + input_sig(args.signal, pair, args.inject, args.channel, args.year) if dorundc else "",
@@ -368,8 +368,12 @@ if __name__ == '__main__':
                 prefix = "--{fn}-expect{s}".format(
                     fn = "fc" if runfc or runcompile else "nll",
                     s = '=' if args.fcexp[0][0] == "-" else " "
-                )
-            ) if runfc or runnll or runcompile else ""
+                )),
+            dkw = "--dkw" if args.dkw else "",
+            dkwpos = "--zerotoylocation {}".format(args.zerotoyloc[0]) if args.zerotoyloc else "",
+            cdfsig = "--cdf-sigma {}".format(args.cdf_sigma) if args.cdf_sigma else "",
+            cdfsan = "--do-cdf-sanity" if args.do_cdf_sanity else ""
+            if runfc or runnll or runcompile else ""
         )
         args.rundc = dorundc
         job_arg += common_job(args)

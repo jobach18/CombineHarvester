@@ -8,7 +8,10 @@ import glob
 import re
 import numpy as np
 import itertools
-import matplotlib.pyplot
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+import uproot
 
 from collections import OrderedDict
 import json
@@ -26,12 +29,12 @@ from desalinator import prepend_if_not_empty, tokenize_to_list, remove_spaces_qu
 from argumentative import common_point, common_common, common_fit_pure, common_fit, make_datacard_pure, make_datacard_forwarded, common_2D, parse_args
 from hilfemir import combine_help_messages
 
-def zero_p_toys(toyfolder):
+def get_zero_p_toys(toyfolder):
 	file_path = glob.glob(os.path.join(toyfolder, "*.root"))[0]
     #read the 0,0 toys into an array
 	with uproot.open(file_path) as root_file:
 		tree = root_file["limit"]
-		data = tree["deltaNLL"].array(library="np")
+		data = tree["deltaNLL"].array()
 	return data
 
 def cdf_epsilon(N, alpha):
@@ -106,12 +109,15 @@ def get_toys(toy_name, best_fit, keep_reduced = False, strict_preservation = Fal
     return pval
 
 
-def correct_dnll_val(dnll, best_fit):
+def correct_dnll_val(dnll_array, best_fit):
     counts, bin_edges = np.histogram(dnll_array, bins=10000, density=True)
-    cdf = np.cumsum(counts) * np.diff(bin_edges) 
+    cdf = np.cumsum(counts) * np.diff(bin_edges)
     best_fit_index = np.digitize(best_fit, bin_edges) - 1
-    best_fit_cdf = cdf[best_fit_index]
-    best_fit_index_corrected = bin_edges[1:][(cdf-cdf_epsilon(len(dnll),args.cdf_sigma))>best_fit_cdf][0]
+    best_fit_cdf = cdf[best_fit_index-1]
+    try:
+        best_fit_index_corrected = bin_edges[1:][(cdf-cdf_epsilon(len(dnll_array),args.cdf_sigma))>best_fit_cdf][0]
+    except:
+        return np.max(dnll_array)
     return best_fit_index_corrected
 
 
@@ -130,7 +136,7 @@ def get_toys_dkw(toy_folder, best_fit, dkw_bounds, dnll_array):
     if not os.path.isfile(toy_name):
         return None
     pval = OrderedDict()
-    vfile = TFile.Open(vname)
+    vfile = TFile.Open(toy_name)
     vtree = vfile.Get("limit")
 
     isum = 0
@@ -139,7 +145,7 @@ def get_toys_dkw(toy_folder, best_fit, dkw_bounds, dnll_array):
     best_fit_corrected = correct_dnll_val(dnll_array, best_fit[2])
     for i in vtree:
         isum += 1
-        ipas += 1 if vtree.deltaNLL > best_fit_corrected else 0
+        ipas += 1 if (vtree.deltaNLL > best_fit_corrected or best_fit[2] == 0) else 0
     vfile.Close()
 
     sigmas = np.zeros_like(dkw_bounds)
@@ -150,7 +156,7 @@ def get_toys_dkw(toy_folder, best_fit, dkw_bounds, dnll_array):
     pval["total"] = isum
     pval["pass"] = ipas
     pval['mode'] = 'DKW'
-    pval['sigmas'] = sigmas
+    pval['sigmas'] = sigmas.tolist()
     return pval
 
 def sum_up(g1, g2):
@@ -165,10 +171,16 @@ def sum_up(g1, g2):
     if g1["dnll"] != g2["dnll"]:
         print '\nWARNING :: incompatible expected/data dnll, when they should be!! Using the first dnll: ', g1["dnll"], ', over the second: ', g2["dnll"]
         sys.stdout.flush()
-
-    gs["total"] = g1["total"] + g2["total"]
-    gs["pass"] = g1["pass"] + g2["pass"]
+    if args.dkw:
+        #do not add up for DKW toys, as they're always the same! This would double count!
+        gs["total"] = g1["total"]
+        gs["pass"] = g1["pass"]
+    else:
+        gs["total"] = g1["total"] + g2["total"]
+        gs["pass"] = g1["pass"] + g2["pass"]
     gs["dnll"] = g1["dnll"]
+    gs['mode'] = g1['mode']
+    gs['sigmas'] = g1['sigmas']
 
     return gs
 
@@ -896,7 +908,7 @@ if __name__ == '__main__':
                 ### load the 0,0 toy distribution 
                 if not args.zerotoyloc:
                     raise RuntimeError('please specify location of the 0,0 toys when using --dkw! - Use --zerotoylocation')
-                zero_p_toys = zero_p_toys(args.zerotoyloc)
+                zero_p_toys = get_zero_p_toys(args.zerotoyloc[0])
                 counts, bin_edges = np.histogram(zero_p_toys, bins=10000, density=True)
                 # Compute the CDF
                 cdf = np.cumsum(counts) * np.diff(bin_edges)
@@ -920,10 +932,8 @@ if __name__ == '__main__':
                     plt.xlabel("deltaNLL")
                     plt.ylabel("CDF")
                     plt.legend(loc='lower right', prop={'size': 4})
-                    plt.savefig('{ptg}_dkw_sanitycheck_pnt_g1_{g1}_g2_{g2}_{exp}.pdf'.format(
+                    plt.savefig('{ptg}_dkw_sanitycheck_pnt__{exp}.pdf'.format(
                     ptg = ptag,
-                    g1 = pnt[0],
-                    g2 = pnt[1],
                     exp = scenario[0]
                 ))
 
@@ -961,8 +971,9 @@ if __name__ == '__main__':
                 tname = tname[0] if len(tname) else ""
 
                 if args.dkw:
-                    print('using the DKW equality to do contour estimation')
-                    gg = get_toys_dkw(toy_name = args.zero_p_toys, best_fit = expected_fit, dkw_bounds = [one_sig_dkw, two_sig_dkw], dnll_array = zero_p_toys)
+                    print('getting point gA {g1} gH {g2}'.format(g1=pnt[0], g2=pnt[1])) 
+                    print('the best fit value is {dnll}'.format(dnll = expected_fit[2]))
+                    gg = get_toys_dkw(toy_folder = args.zerotoyloc[0], best_fit = expected_fit, dkw_bounds = [one_sig_dkw, two_sig_dkw], dnll_array = zero_p_toys)
 
                 else:
                     gg = get_toys(toy_name = tname, best_fit = expected_fit, keep_reduced = args.collecttoy and fcexp == args.fcexp[-1])

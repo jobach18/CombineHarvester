@@ -57,6 +57,8 @@ condor_check . | tee /dev/tty | xargs rm
 
 #8 compile the available statistics - the non-shared toys are deleted, but all the relevant numbers we have gotten already
 ./../scripts/submit_twin.py --mode 'clean,compile' --point "${pairs}" --tag "${tag}" --fc-expect "${exps}" --delete-root --local --force --unblind
+#8a Compile with DKW inequality used (to get around using toys for grid points and use shared 0,0 toys
+./../scripts/submit_twin.py --mode 'clean,compile' --point "${pairs}" --tag "${tag}" --fc-expect "${exps}" --local --force --unblind --dkw --zerotoylocation zero_p_toys/ --cdf-sigma 1 #--do-cdf-sanity
 
 #9 when extra toys are needed
 #9a use this to add a fixed amount of toys = nidxs * ntoy
