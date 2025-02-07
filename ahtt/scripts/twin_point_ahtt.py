@@ -16,6 +16,7 @@ import uproot
 from collections import OrderedDict
 import json
 
+import ROOT
 from ROOT import TFile, TTree
 from array import array
 
@@ -29,16 +30,36 @@ from desalinator import prepend_if_not_empty, tokenize_to_list, remove_spaces_qu
 from argumentative import common_point, common_common, common_fit_pure, common_fit, make_datacard_pure, make_datacard_forwarded, common_2D, parse_args
 from hilfemir import combine_help_messages
 
+from tqdm import tqdm
+
 def get_zero_p_toys(toyfolder):
-	file_path = glob.glob(os.path.join(toyfolder, "*.root"))[0]
+    file_path = glob.glob(os.path.join(toyfolder, "*.root"))[0]
     #read the 0,0 toys into an array
-	with uproot.open(file_path) as root_file:
-		tree = root_file["limit"]
-		data = tree["deltaNLL"].array()
-	return data
+    vfile = TFile.Open(file_path)
+    vtree = vfile.Get("limit")
+    with uproot.open(file_path) as root_file:
+        tree = root_file["limit"]
+        data = tree["deltaNLL"].array()
+    return data
 
 def cdf_epsilon(N, alpha):
-    return np.sqrt(np.log(2/alpha)/(2*N))
+    alpha_pval = {
+    1: 0.3173,
+    2: 0.0455,
+    3: 0.0027,
+    4: 6.33e-5,
+    5: 5.73e-7,
+    6: 1.97e-9,
+    7: 2.56e-12,
+    8: 1.24e-15,
+    9: 2.87e-19,
+    10: 2.77e-23,
+    11: 1.19e-27,
+    12: 2.22e-32
+}
+    def get_pval(sigma):
+        return alpha_pval.get(sigma, "Sigma value out of range")
+    return np.sqrt(np.log(2/get_pval(alpha))/(2*N))
 
 def read_previous_best_fit(gname):
     with open(gname) as ff:
@@ -109,20 +130,26 @@ def get_toys(toy_name, best_fit, keep_reduced = False, strict_preservation = Fal
     return pval
 
 
-def correct_dnll_val(dnll_array, best_fit):
+def correct_dnll_val(dnll_array, best_fit, up=True):
     counts, bin_edges = np.histogram(dnll_array, bins=10000, density=True)
     cdf = np.cumsum(counts) * np.diff(bin_edges)
     best_fit_index = np.digitize(best_fit, bin_edges) - 1
     best_fit_cdf = cdf[best_fit_index-1]
     try:
-        best_fit_index_corrected = bin_edges[1:][(cdf-cdf_epsilon(len(dnll_array),args.cdf_sigma))>best_fit_cdf][0]
+        if up:
+            best_fit_index_corrected = bin_edges[1:][(cdf+cdf_epsilon(len(dnll_array),args.cdf_sigma))>best_fit_cdf][0]
+        else:
+            best_fit_index_corrected = bin_edges[1:][(cdf-cdf_epsilon(len(dnll_array),args.cdf_sigma))>best_fit_cdf][0]
     except:
-        return np.max(dnll_array)
+        if up:
+            return np.max(dnll_array)
+        else:
+            return best_fit 
     return best_fit_index_corrected
 
 
 
-def get_toys_dkw(toy_folder, best_fit, dkw_bounds, dnll_array):
+def get_toys_dkw(toy_folder, best_fit, dnll_array):
     '''
     in:
         toy_name:   position of 0,0 toys
@@ -130,33 +157,54 @@ def get_toys_dkw(toy_folder, best_fit, dkw_bounds, dnll_array):
         dkw_bounds: array of DKw corrected bounds of dnll values for 1,2, ... sigma
     get the modified version of the fc output for the case with dkw inequality.
     toy_name is the 0,0 shared toys, we collect the passing toys for 0,0 point that was shifted by given cdf_sigma  
-    We also report as "sigmas" the 1 and 2 sigma pass boolean as 0,1
     '''
     toy_name = glob.glob(os.path.join(toy_folder, "*.root"))[0]
     if not os.path.isfile(toy_name):
         return None
     pval = OrderedDict()
-    vfile = TFile.Open(toy_name)
-    vtree = vfile.Get("limit")
-
+    best_fit_corrected = correct_dnll_val(dnll_array, best_fit[2])
+    best_fit_corrected_down = correct_dnll_val(dnll_array, best_fit[2], up=False)
     isum = 0
     ipas = 0
-	#correct the best_fit by the given DKW security
-    best_fit_corrected = correct_dnll_val(dnll_array, best_fit[2])
-    for i in vtree:
-        isum += 1
-        ipas += 1 if (vtree.deltaNLL > best_fit_corrected or best_fit[2] == 0) else 0
-    vfile.Close()
+    ipas_down = 0
+    ipas_central = 0
+    isum = len(dnll_array)
+    if best_fit[2]==0:
+        ipas = len(dnll_array)
+        ipas_down = len(dnll_array)
+        ipas_central = len(dnll_array)
+    else:
+        ipas = len(dnll_array[dnll_array > best_fit_corrected])
+        ipas_down = len(dnll_array[dnll_array > best_fit_corrected_down])
+        ipas_central = len(dnll_array[dnll_array > best_fit[2]])
+    #for i in dnll_array:
+    #    isum += 1
+    #    ipas += 1 if (i > best_fit_corrected or best_fit[2] == 0) else 0
 
-    sigmas = np.zeros_like(dkw_bounds)
-    for i, dkw_bound in enumerate(dkw_bounds):
-        sigmas[i] = 1 if best_fit[2] > dkw_bound else 0
+    #ROOT.gErrorIgnoreLevel = ROOT.kError  # Suppress errors (only Fatal messages remain)
+    #with TFile.Open(toy_name) as vfile:
+        #vfile = TFile.Open(toy_name)
+    #    vtree = vfile.Get("limit")
+    #
+    #    isum = 0
+    #    ipas = 0
+    #    #correct the best_fit by the given DKW security
+    #    best_fit_corrected = correct_dnll_val(dnll_array, best_fit[2])
+    #    print('running trough toys')
+    #    print(vtree)
+    #    exit()
+    #    for i in tqdm(vtree):
+    #        isum += 1
+    #        ipas += 1 if (vtree.deltaNLL > best_fit_corrected or best_fit[2] == 0) else 0
+    #    #vfile.Close()
+
 
     pval["dnll"] = best_fit[2]
     pval["total"] = isum
     pval["pass"] = ipas
+    pval["pass_central"] = ipas_central
+    pval["pass_down"] = ipas_down
     pval['mode'] = 'DKW'
-    pval['sigmas'] = sigmas.tolist()
     return pval
 
 def sum_up(g1, g2):
@@ -180,7 +228,6 @@ def sum_up(g1, g2):
         gs["pass"] = g1["pass"] + g2["pass"]
     gs["dnll"] = g1["dnll"]
     gs['mode'] = g1['mode']
-    gs['sigmas'] = g1['sigmas']
 
     return gs
 
@@ -906,36 +953,74 @@ if __name__ == '__main__':
 
             if args.dkw:
                 ### load the 0,0 toy distribution 
-                if not args.zerotoyloc:
-                    raise RuntimeError('please specify location of the 0,0 toys when using --dkw! - Use --zerotoylocation')
-                zero_p_toys = get_zero_p_toys(args.zerotoyloc[0])
+                if not args.toyloc:
+                    raise RuntimeError('please specify location of the 0,0 toys when using --dkw! - Use --toy-location')
+                zero_p_toys = get_zero_p_toys(args.toyloc)
+                print('-----------------------------------------')
+                print('    there are {} toys          '.format(len(zero_p_toys)))
+                print('-----------------------------------------')
                 counts, bin_edges = np.histogram(zero_p_toys, bins=10000, density=True)
                 # Compute the CDF
                 cdf = np.cumsum(counts) * np.diff(bin_edges)
                 x_sigma_band_cdf = cdf_epsilon(len(zero_p_toys), args.cdf_sigma)
-                cdf_at_confidence = cdf - x_sigma_band_cdf
-                one_sig_dkw = bin_edges[1:][(cdf_at_confidence)>0.68][0]
-                two_sig_dkw = bin_edges[1:][(cdf_at_confidence)>0.95][0]
                 if args.do_cdf_sanity:
+                    cdf_at_confidence = cdf - x_sigma_band_cdf
+                    cdf_plus_confidence = cdf + x_sigma_band_cdf
+                    try:
+                        one_sig_dkw = bin_edges[1:][(cdf_at_confidence)>0.68][0]
+                    except IndexError:
+                        print('one sigma band never reaches 68 Percentile')
+                        one_sig_dkw = np.max(bin_edges[1:])
+                    try:
+                        two_sig_dkw = bin_edges[1:][(cdf_at_confidence)>0.95][0]
+                    except IndexError:
+                        print('two sigma band never reaches 95 Percentile')
+                        two_sig_dkw = np.max(bin_edges[1:])
+                    try:
+                        three_sig_dkw = bin_edges[1:][(cdf_at_confidence)>0.9973][0]
+                    except IndexError:
+                        print('three sigma band never reaches 99.73 Percentile')
+                        three_sig_dkw = np.max(bin_edges[1:])
+                    try:
+                        one_sig_dkw_up = bin_edges[1:][(cdf_plus_confidence)>0.68][0]
+                    except IndexError:
+                        print('one sigma up variation for given cdf-sigma is out of bounds, answer will be meaningless!')
+                        one_sig_dkw_up = np.min(bin_edges[1:])
+                    try:
+                        two_sig_dkw_up = bin_edges[1:][(cdf_plus_confidence)>0.95][0]
+                    except IndexError:
+                        print('two sigma up variation with given cdf sigma is out of bounds!')
+                        two_sig_dkw_up = np.min(bin_edges[1:])
+                    try:
+                        three_sig_dkw_up = bin_edges[1:][(cdf_plus_confidence)>0.9973][0]
+                    except IndexError:
+                        print('three sigmas up variation with given cdf sigma is out of bounds')
+                        three_sig_dkw_up = np.min(bin_edges[1:])
                     plt.plot(bin_edges[1:], cdf, label="CDF")
-                    plt.plot(bin_edges[1:], cdf_at_confidence, label="CDF at confidence {} sigma".format(args.cdf_sigma))
+                    plt.plot(bin_edges[1:], cdf_at_confidence, label="CDF down variation {} sigma".format(args.cdf_sigma))
+                    plt.plot(bin_edges[1:], cdf_plus_confidence, label="CDF up-variation {} sigma".format(args.cdf_sigma))
 
                     one_sig_cdf = bin_edges[1:][(cdf)>0.68][0]
                     two_sig_cdf = bin_edges[1:][(cdf)>0.95][0]
-                    plt.axvline(x=one_sig_cdf, color='g', linestyle='-', label='1 sigma bound for cdf')
-                    plt.axvline(x=one_sig_dkw, color='g', linestyle='-', label='1 sigma bound for cdf with {} sigma confidence'.format(args.cdf_sigma))
-                    plt.axvline(x=two_sig_cdf, color='g', linestyle='-', label='2 sigma bound for cdf')
-                    plt.axvline(x=two_sig_dkw, color='g', linestyle='-', label='2 sigma bound for cdf with {} sigma confidence'.format(args.cdf_sigma))
+                    three_sig_cdf = bin_edges[1:][(cdf)>0.9973][0]
+                    plt.axvline(x=one_sig_cdf, color='g', linestyle='-', label='68 percentile for cdf')
+                    plt.axvspan(one_sig_dkw, one_sig_dkw_up, color='gray', alpha=0.9, label="{} Sigma C.L.".format(args.cdf_sigma))
+                    plt.axvline(x=two_sig_cdf, color='r', linestyle='-', label='95 percentile for cdf')
+                    plt.axvspan(two_sig_dkw, two_sig_dkw_up, color='gray', alpha=0.9)
+                    plt.axvline(x=three_sig_cdf, color='r', linestyle='-', label='99.73 percentile for cdf')
+                    plt.axvspan(three_sig_dkw, three_sig_dkw_up, color='gray', alpha=0.9)
 
                     counts, bin_edges = np.histogram(zero_p_toys, bins=100, density=True)
                     plt.bar(bin_edges[1:], counts/np.sum(counts), label='dNLL', alpha=0.3, width=np.diff(bin_edges))
                     plt.xlabel("deltaNLL")
                     plt.ylabel("CDF")
                     plt.legend(loc='lower right', prop={'size': 4})
-                    plt.savefig('{ptg}_dkw_sanitycheck_pnt__{exp}.pdf'.format(
+                    plt.savefig('{dcdir}/{ptg}_dkw_sanitycheck_pnt__{exp}.pdf'.format(
+                    dcdir = dcdir,
                     ptg = ptag,
                     exp = scenario[0]
                 ))
+                    plt.clf()
 
             for pnt in gpoints:
                 gv = stringify(pnt)
@@ -971,9 +1056,9 @@ if __name__ == '__main__':
                 tname = tname[0] if len(tname) else ""
 
                 if args.dkw:
-                    print('getting point gA {g1} gH {g2}'.format(g1=pnt[0], g2=pnt[1])) 
-                    print('the best fit value is {dnll}'.format(dnll = expected_fit[2]))
-                    gg = get_toys_dkw(toy_folder = args.zerotoyloc[0], best_fit = expected_fit, dkw_bounds = [one_sig_dkw, two_sig_dkw], dnll_array = zero_p_toys)
+                    #print('getting point gA {g1} gH {g2}'.format(g1=pnt[0], g2=pnt[1])) 
+                    #print('the best fit value is {dnll}'.format(dnll = expected_fit[2]))
+                    gg = get_toys_dkw(toy_folder = args.toyloc, best_fit = expected_fit, dnll_array = zero_p_toys)
 
                 else:
                     gg = get_toys(toy_name = tname, best_fit = expected_fit, keep_reduced = args.collecttoy and fcexp == args.fcexp[-1])
@@ -984,8 +1069,11 @@ if __name__ == '__main__':
                         directory_to_delete(location = tname)
                         syscall("rm " + tname, False, True)
 
-                if gv in grid["g-grid"]:
+                if gv in grid["g-grid"] and not args.dkw:
                     grid["g-grid"][gv] = sum_up(grid["g-grid"][gv], gg)
+                elif gv in grid["g-grid"] and args.dkw:
+                    #print('new DKW scan for same points, taking new results!')
+                    grid["g-grid"][gv] = gg
                 else:
                     grid["g-grid"][gv] = gg
 

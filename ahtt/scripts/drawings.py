@@ -7,7 +7,7 @@ from utilspy import pmtofloat, coinflip
 from desalinator import tokenize_to_list, remove_spaces_quotes
 
 min_g = 0.
-max_g = 3.
+max_g = 1.
 epsilon = 2.**-17
 axes = {
     "mass" :      r"$\mathrm{m}_{\mathrm{\mathsf{%s}}}$ [GeV]",

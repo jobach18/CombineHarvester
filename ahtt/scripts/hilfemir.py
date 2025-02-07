@@ -150,8 +150,8 @@ combine_help_messages = {
     "relevant only for NPs. those not also in --nll-parameter are profiled with flat prior.\n",
 
     "--dkw": "uses DKW inequality and 0,0 shared toys during compile step to circumvent toys for all g-grid points \n"
+    "please use --toy-location to load the 0,0 toys\n"
     "for further info consult Joern\n",
-    "--zerotoylocation": "for DKW inequality please specify the location of the 0,0 toys!\n",
     "--cdf-sigma": "Confidence Level for the DKW inequality usage, default is 2 sigma",
     "--do-cdf-sanity": "plot 1 and 2 sigma over 0,0 toy distribution, to sanity check the DKW inequality",
     "--delete-root": "delete root files after compiling",

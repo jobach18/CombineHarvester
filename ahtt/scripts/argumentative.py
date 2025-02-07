@@ -123,8 +123,6 @@ def common_2D(parser):
 
     parser.add_argument("--dkw", help = combine_help_messages["--dkw"], dest = "dkw", default = "",
                         required = False, action='store_true')
-    parser.add_argument("--zerotoylocation", help = combine_help_messages["--zerotoylocation"], dest = "zerotoyloc", default = "", required = False,
-                        type = lambda s: [] if s == "" else tokenize_to_list(remove_spaces_quotes(s)))
     parser.add_argument("--cdf-sigma", help = combine_help_messages["--cdf-sigma"], default = 2, dest = "cdf_sigma", required = False, type = lambda s: int(remove_spaces_quotes(s)))
     parser.add_argument("--do-cdf-sanity", help = combine_help_messages["--do-cdf-sanity"], dest = "do_cdf_sanity", default = "",
                         required = False, action='store_true')

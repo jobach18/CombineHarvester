@@ -26,6 +26,16 @@ from drawings import min_g, max_g, epsilon, axes, first, second, get_point, str_
 from drawings import default_etat_measurement, etat_blurb
 from desalinator import prepend_if_not_empty, tokenize_to_list, remove_spaces_quotes
 
+from matplotlib.collections import PolyCollection
+
+def get_contour_paths(contour):
+    """Extract paths from a contour object."""
+    paths = []
+    for collection in contour.collections:
+        for path in collection.get_paths():
+            paths.append(path.vertices)
+    return paths
+
 def read_contour(cfiles):
     contours = [OrderedDict() for cf in cfiles]
 
@@ -37,12 +47,18 @@ def read_contour(cfiles):
         contours[ii]["g1"] = []
         contours[ii]["g2"] = []
         contours[ii]["eff"] = []
+        if args.dkwerror:
+            contours[ii]["eff_down"] = []
+            contours[ii]["eff_central"] = []
         contours[ii]["min"] = sys.maxsize
 
         for gv in cc["g-grid"].keys():
             contours[ii]["g1"].append( float(gv.replace(" ", "").split(",")[0]) )
             contours[ii]["g2"].append( float(gv.replace(" ", "").split(",")[1]) )
             contours[ii]["eff"].append( cc["g-grid"][gv]["pass"] / cc["g-grid"][gv]["total"] )
+            if args.dkwerror:
+                contours[ii]["eff_down"].append( cc["g-grid"][gv]["pass_down"] / cc["g-grid"][gv]["total"] )
+                contours[ii]["eff_central"].append( cc["g-grid"][gv]["pass_central"] / cc["g-grid"][gv]["total"] )
             contours[ii]["min"] = min(contours[ii]["min"], cc["g-grid"][gv]["total"])
 
     return contours
@@ -90,8 +106,11 @@ def draw_contour(onames, pair, cfiles, labels, maxsigma, propersig, drawcontour,
 
                 ax.plot(np.array(xs), np.array(ys),
                         marker = '.', ls = '', lw = 0., color = colortouse, alpha = 0.5)
-
-        for isig in range(maxsigma):
+        if args.dkwerror:
+            sigma_runindex = [1]
+        else: 
+            sigma_runindex = range(maxsigma)
+        for isig in sigma_runindex:
             if ic == 0 and maxsigma > 1:
                 if isig > 1:
                     sigmas.append((mln.Line2D([0], [0], color = "0", linestyle = draw_contour.lines[isig], linewidth = 2), r"$\pm" + str(isig + 1) + r"\sigma$"))
@@ -107,12 +126,38 @@ def draw_contour(onames, pair, cfiles, labels, maxsigma, propersig, drawcontour,
                 drawcontour = False
 
             if drawcontour:
-                ax.tricontour(np.array(contour["g1"]), np.array(contour["g2"]), contour["eff"],
+                if args.dkwerror:
+                    print('plotting the dkw errorband')
+                    contour_up = ax.tricontour(np.array(contour["g1"]), np.array(contour["g2"]), contour["eff"],
+                                  levels = np.array([alpha, 2.]), colors = colortouse,
+                                  linestyles = [draw_contour.lines[isig]], linewidths = 2, alpha = 1. - (0.05 * isig))
+                    contour_down = ax.tricontour(np.array(contour["g1"]), np.array(contour["g2"]), contour["eff_down"],
+                                  levels = np.array([alpha, 2.]), colors = colortouse,
+                                  linestyles = [draw_contour.lines[isig]], linewidths = 2, alpha = 1. - (0.05 * isig))
+					# Extract contour paths 
+                    paths1 = get_contour_paths(contour_up)
+                    paths2 = get_contour_paths(contour_down)
+                    # Fill area between the two contours
+                    for p1, p2 in zip(paths1, paths2):  # This assumes matching path structure
+                        poly = PolyCollection([np.vstack([p1, p2[::-1]])], color='gray', alpha=0.5)
+                        ax.add_collection(poly)    
+
+
+                    ax.tricontour(np.array(contour["g1"]), np.array(contour["g2"]), contour["eff_central"],
+                                  levels = np.array([alpha, 2.]), colors = colortouse,
+                                  linestyles = [draw_contour.lines[isig]], linewidths = 2, alpha = 1. - (0.05 * isig))
+                    handles.append((mln.Line2D([0], [0], color = colortouse, linestyle = 'solid', linewidth = 2), labels[ic]))
+                else:
+                    ax.tricontour(np.array(contour["g1"]), np.array(contour["g2"]), contour["eff"],
                               levels = np.array([alpha, 2.]), colors = colortouse,
                               linestyles = [draw_contour.lines[isig]], linewidths = 2, alpha = 1. - (0.05 * isig))
 
             if len(labels) > 1 and isig == 0:
                 handles.append((mln.Line2D([0], [0], color = colortouse, linestyle = 'solid', linewidth = 2), labels[ic]))
+            if len(handles)==2:
+                from matplotlib.patches import Patch
+                shaded_patch = Patch(color='gray', alpha=0.5, label="5 Sigma DKW C.L. for CDF ")
+                handles.append((shaded_patch, "5 Sigma DKW C.L."))
 
     plt.xlabel(axes["coupling"] % str_point(pair[0]), fontsize = 26, loc = "right")
     plt.ylabel(axes["coupling"] % str_point(pair[1]), fontsize = 26, loc = "top")
@@ -123,7 +168,7 @@ def draw_contour(onames, pair, cfiles, labels, maxsigma, propersig, drawcontour,
             legend1 = ax.legend(first(sigmas), second(sigmas), loc = 'best', bbox_to_anchor = (0.75, 0.65, 0.225, 0.3), fontsize = 21, handlelength = 2, borderaxespad = 1., frameon = False)
             ax.add_artist(legend1)
 
-            legend2 = ax.legend(first(handles), second(handles), loc = 'best', bbox_to_anchor = (0.75, 0., 0.25, 0.2), fontsize = 21, handlelength = 2., borderaxespad = 1., frameon = False)
+            legend2 = ax.legend(first(handles), second(handles), loc = 'best', bbox_to_anchor = (0.75, 0.1, 0.25, 0.2), fontsize = 21, handlelength = 2., borderaxespad = 1., frameon = False)
             ax.add_artist(legend2)
 
         elif len(handles) > 0:
@@ -152,8 +197,11 @@ def draw_contour(onames, pair, cfiles, labels, maxsigma, propersig, drawcontour,
     ax.tick_params(axis = "both", which = "both", direction = "in", bottom = True, top = True, left = True, right = True)
     ax.tick_params(axis = "both", which = "major", width = 1, length = 8, labelsize = 22, pad = 10)
     ax.tick_params(axis = "both", which = "minor", width = 1, length = 3)
+    ax.set_xlim(0,1)
+    ax.set_ylim(0,1)
+    #ax.set_aspect('auto')
 
-    fig.set_size_inches(8., 8.)
+    fig.set_size_inches(10., 10.)
     fig.tight_layout()
 
     for oname in onames:
@@ -207,6 +255,8 @@ if __name__ == '__main__':
 
     parser.add_argument("--opaque-background", help = "make the background white instead of transparent",
                         dest = "transparent", action = "store_false", required = False)
+    parser.add_argument("--dkw-errorband", help = "plot only 95% exclusion with DKW sigma error bands",
+                        dest = "dkwerror", action = "store_true", required = False)
     parser.add_argument("--plot-formats", help = "comma-separated list of formats to save the plots in", default = [".png"], dest = "fmt", required = False,
                         type = lambda s: [prepend_if_not_empty(fmt, '.') for fmt in tokenize_to_list(remove_spaces_quotes(s))])
 

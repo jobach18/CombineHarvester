@@ -58,7 +58,7 @@ condor_check . | tee /dev/tty | xargs rm
 #8 compile the available statistics - the non-shared toys are deleted, but all the relevant numbers we have gotten already
 ./../scripts/submit_twin.py --mode 'clean,compile' --point "${pairs}" --tag "${tag}" --fc-expect "${exps}" --delete-root --local --force --unblind
 #8a Compile with DKW inequality used (to get around using toys for grid points and use shared 0,0 toys
-./../scripts/submit_twin.py --mode 'clean,compile' --point "${pairs}" --tag "${tag}" --fc-expect "${exps}" --local --force --unblind --dkw --zerotoylocation zero_p_toys/ --cdf-sigma 1 #--do-cdf-sanity
+./../scripts/submit_twin.py --mode 'clean,compile' --point "${pairs}" --tag "${tag}" --fc-expect "${exps}" --local --force --unblind --dkw --toy-location zero_p_toy_full/ --cdf-sigma 2 #--do-cdf-sanity
 
 #9 when extra toys are needed
 #9a use this to add a fixed amount of toys = nidxs * ntoy
@@ -72,3 +72,8 @@ condor_check . | tee /dev/tty | xargs rm
 ./../scripts/submit_twin.py --mode contour --point "${pairs}" --tag "${tag}" --fc-expect "${exps}" --n-toy "${ntoy}" --run-idxs "${idxs}" --fc-mode refine --unblind --no-log
 #10b repeat step #5 and go back to #7
 #10c rule of thumb: use --no-log when more than ~2k jobs per A/H pair are submitted, or always if the jobs usually succeed, and the logs aren't needed
+#
+#plotting
+./../scripts/plot_contour.py --point "${pairs}" --odir contour --contour 'lx_etat / exp-b, obs' --label 'Expected (b);Observed' --draw-best-fit --formal --A343-background 1
+#new plot design
+./../scripts/plot_contour.py --point "${pairs}" --odir dkw_contour/ --contour 'lx_etat / exp-b, obs' --label 'Expected (b);Observed'  --formal --A343-background 1 --dkw-error
